@@ -1,0 +1,182 @@
+<?php
+
+define('BLOCK_REFRESH_DEFAULT_AUTOMATIC', FALSE); // autorefresh disabled by default
+define('BLOCK_REFRESH_DEFAULT_MANUAL', FALSE); // manual refresh disabled by default
+define('BLOCK_REFRESH_DEFAULT_AUTOMATIC_TIMER', 120);  // default refreshes every two minutes, if enabled
+
+/**
+ * Implements hook_init().
+ * Calls the jquery to refresh blocks automatically, but only if the blocks exist on the current page and are enabled
+ * DRUPAL 7 STATUS: WORKING!
+ */
+function block_refresh_init() {
+  drupal_add_js(drupal_get_path('module', 'block_refresh') . '/js/block_refresh.js', array('scope' => 'footer'));
+  drupal_add_css(drupal_get_path('module', 'block_refresh') . '/css/block_refresh.css');
+  if(user_access('access block refresh content')) {
+    drupal_add_js(array(
+      'block_refresh' => array(
+        'settings' => variable_get('block_refresh_settings', array()),
+        'args' => arg(),
+        'query' => block_refresh_get_query_as_string(),
+      )
+    ), 'setting');
+  }
+}
+
+/**
+ * Implements hook_permission().
+ * Add permission for accessing auto/manually refreshed block content
+ * DRUPAL 7 STATUS: WORKING!
+ */
+function block_refresh_permission() {
+  return array(
+    'access block refresh content' => array(
+      'title' => t('Access block refresh content'),
+      'description' => t('Selected roles will see content refreshed in enabled blocks.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_help().
+ * DRUPAL 7 STATUS: WORKING!
+ */
+function block_refresh_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#block_refresh':
+      $block_refresh_help  = '<div class="form-item">';
+      $block_refresh_help .= t("Ensure that you have !configured for user roles. Adding a permission to %access will allow a block, when configured, to be refreshed automatically and/or manually.", array('%access' => 'access block refresh content', '!configured' => l(t('configured permissions'), 'admin/user/access', array(), NULL, 'module-block_refresh')));
+      $block_refresh_help .= '</div><div class="form-item">';
+      $block_refresh_help .= t("You will also need to set the appropriate settings for each block that you wish to automatically and/or manually refresh by clicking on the appropriate %configure link(s) on the !admin.", array('%configure' => t('configure'), '!admin' => l(t('blocks administration page'), 'admin/build/block')));
+      $block_refresh_help .= '</div>';  
+      return $block_refresh_help;      
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Add a 'Block Refresh' settings fieldset to the block admin form
+ * DRUPAL 7 STATUS: APPEARS TO BE WORKING!
+ */
+function block_refresh_form_block_admin_configure_alter(&$form, $form_state) {
+  $settings = variable_get('block_refresh_settings', array());
+  $form['block_refresh'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Block refresh settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#weight' => -1,
+  );
+  $form['block_refresh']['block_refresh_auto'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable block to be refreshed automatically'),
+    '#description' => t('If checked, then the content of this block will be refresh automatically every x seconds defined below.'),
+    '#default_value' => isset($settings['block-' . $form['module']['#value'] . '-' . $form['delta']['#value']]['auto']) ? $settings['block-' . $form['module']['#value'] . '-' . $form['delta']['#value']]['auto'] : variable_get('block_refresh_default_automatic', BLOCK_REFRESH_DEFAULT_AUTOMATIC),
+  );
+  $form['block_refresh']['block_refresh_timer'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block refresh timer'),
+    '#description' => t('If this block is set to be refreshed automatically (checkbox above is checked), enter the number of <strong>seconds</strong> between each refresh.'),
+    '#default_value' => isset($settings['block-' . $form['module']['#value'] . '-' . $form['delta']['#value']]['timer']) ? $settings['block-' . $form['module']['#value'] . '-' . $form['delta']['#value']]['timer'] : variable_get('block_refresh_autorefresh_default_timer', BLOCK_REFRESH_DEFAULT_AUTOMATIC_TIMER),
+  );
+  $form['block_refresh']['block_refresh_manual'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable block to be refreshed manually'),
+    '#description' => t('If checked, then the content of this block may be refreshed manually by the user, by clicking on a provided (themeable) button in the block\'s subject header.'),
+    '#default_value' => isset($settings['block-' . $form['module']['#value'] . '-' . $form['delta']['#value']]['manual']) ? $settings['block-' . $form['module']['#value'] . '-' . $form['delta']['#value']]['manual'] : variable_get('block_refresh_default_manual', BLOCK_REFRESH_DEFAULT_MANUAL),
+  );
+  $form['#submit'][] = 'block_refresh_submit';
+}
+
+/**
+ *  Submission handler for for block_refresh_menu().
+ *  This handles the submission on the specific block configuration page
+ */
+function block_refresh_submit($form, &$form_state) {
+  $settings = variable_get('block_refresh_settings', array());
+  // If the auto (enable) checkbox AND the manual checkbox are unchecked, we want to remove the current block from the array
+  if(!$form['block_refresh']['block_refresh_auto']['#checked'] && !$form['block_refresh']['block_refresh_manual']['#checked']) {
+    unset($settings['block-' . $form_state['values']['module'] . '-' . $form_state['values']['delta']]);
+  }
+  // Otherwise, we need to setup the block to be configured for block refresh
+  else {
+    $settings['block-' . $form_state['values']['module'] . '-' . $form_state['values']['delta']]['auto'] = $form_state['values']['block_refresh_auto'];
+    $settings['block-' . $form_state['values']['module'] . '-' . $form_state['values']['delta']]['manual'] = $form_state['values']['block_refresh_manual'];
+    $settings['block-' . $form_state['values']['module'] . '-' . $form_state['values']['delta']]['timer'] = $form_state['values']['block_refresh_timer'];
+    $settings['block-' . $form_state['values']['module'] . '-' . $form_state['values']['delta']]['block'] = array('block' => $form_state['values']['module'], 'delta' => $form_state['values']['delta']);
+  }
+  variable_set('block_refresh_settings', $settings);
+}
+
+/**
+ * Implements hook_menu().
+ * DRUPAL 7 STATUS: WORKING!
+ */
+function block_refresh_menu() {
+  $items = array();
+  // this will display the contents of a block, if it's configured with Block Refresh
+  $items['block_refresh'] = array(
+    'title' => 'Block refresh block content',
+    'page callback' => 'block_refresh_block_content',
+    'access arguments' => array('access block refresh content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+
+/**
+ * PRIVATE FUNCTIONS
+ */
+
+/**
+ *  page callback for /block_refresh/[module]/[delta]
+ *  displays the block content, without any other page information
+ */
+function block_refresh_block_content($module = NULL, $delta = NULL) {
+  // If there is a request directly to /block_refresh...
+  if (!isset($module) || !isset($delta)) {
+    drupal_not_found();
+  }
+  
+  $settings = variable_get('block_refresh_settings', array());
+  // If automatic refresh AND manual refresh are both disabled...
+  if (!$settings['block-' . $module . '-' . $delta]['auto'] && !$settings['block-' . $module . '-' . $delta]['manual']) {
+    drupal_not_found();
+  }
+  //Validate args and get referrering page args from end.  Set as path.
+  $args = arg();
+  if(!empty($args[3]) && $args[0] == 'block_refresh' && $args[1] == $module && $args[2] == $delta) {
+    unset($args[0]);
+    unset($args[1]);
+    unset($args[2]);
+    $_GET['q'] = implode('/', $args);
+  } else {
+    $_GET['q'] = '';  $args = arg();
+  
+  }
+  // Run the block_view hook from the block module
+  $block = module_invoke($module, 'block_view', $delta);
+  // Print out the content of the proceeding call
+  if (is_array($block['content'])) {
+     print render($block['content']);
+  } else {
+     print $block['content'];
+  }
+}
+
+/**
+ *  get all $_GET values, unset q and return as string
+ */
+function block_refresh_get_query_as_string() {
+  $vars = $_GET;
+  if(!empty($vars['q'])) {
+    unset($vars['q']);
+  }
+  if(count($vars) > 0 ) {
+    array_walk($vars , create_function('&$v,$k', '$v = $k."=".$v ;'));
+    return '?' . implode("&",$vars);
+  } else {
+    return '';
+  }
+}

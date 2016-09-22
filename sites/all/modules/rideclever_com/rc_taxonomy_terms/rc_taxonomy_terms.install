@@ -1,0 +1,135 @@
+<?php
+/**
+ * @file
+ * Creates the taxonomy terms needed for the site with the correct tid numbers.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function rc_taxonomy_terms_install() {
+  $terms = array();
+  $terms[0] = new stdclass();
+  $terms[0]->tid = 4;
+  $terms[0]->name = 'Canceled by customer';
+  $terms[1] = new stdclass();
+  $terms[1]->tid = 5;
+  $terms[1]->name = 'Canceled by driver';
+  $terms[2] = new stdclass();
+  $terms[2]->tid = 6;
+  $terms[2]->name = 'Picked up';
+  $terms[3] = new stdclass();
+  $terms[3]->tid = 7;
+  $terms[3]->name = 'Dropped off';
+  $terms[4] = new stdclass();
+  $terms[4]->tid = 8;
+  $terms[4]->name = 'Accepted';
+  $terms[5] = new stdclass();
+  $terms[5]->tid = 9;
+  $terms[5]->name = 'Customer no show';
+
+  $vid = 3;
+  $vocabulary = new stdclass();
+  $vocabulary->vid = $vid;
+  $vocabulary->name = 'Taxi Area';
+  $vocabulary->machine_name = 'taxi_area';
+  $vocabulary->module = 'rc_taxonomy_terms_install';
+  $vocabulary->description = 'Taxi coverage area.';
+  rc_taxonomy_terms_vocabulary_save($vocabulary);
+
+  $vid = 4;
+  $vocabulary = new stdclass();
+  $vocabulary->vid = $vid;
+  $vocabulary->name = 'Ride Events';
+  $vocabulary->machine_name = 'ride_events';
+  $vocabulary->module = 'rc_taxonomy_terms_install';
+  $vocabulary->description = 'Events related to a ride.';
+  rc_taxonomy_terms_vocabulary_save($vocabulary);
+
+  /*$x = count($terms);
+  $i = 0;
+  while ($i < $x) {
+    $terms[$i]->vid = $vid;
+    rc_taxonomy_terms_save_term($terms[$i]);
+    $i++;
+  }
+  */
+}
+
+/**
+ * create a term with a specific tid.
+ *
+ * @param object $term
+ *   The term to save/update
+ *
+ */
+function rc_taxonomy_terms_save_term($term) {
+  $original = taxonomy_term_load($term->tid);
+  if ($original == FALSE) {
+    $op = 'insert';
+    $status = drupal_write_record('taxonomy_term_data', $term);
+    //field_attach_insert('taxonomy_term', $term);
+    if (!isset($term->parent)) {
+      $term->parent = array(0);
+    }
+    if (!is_array($term->parent)) {
+      $term->parent = array($term->parent);
+    }
+    $query = db_insert('taxonomy_term_hierarchy')->fields(array('tid', 'parent'));
+    foreach ($term->parent as $parent) {
+      if (is_array($parent)) {
+        foreach ($parent as $tid) {
+          $query->values(array(
+            'tid' => $term->tid,
+            'parent' => $tid,
+          ));
+        }
+      }
+      else {
+        $query->values(array(
+          'tid' => $term->tid,
+          'parent' => $parent,
+        ));
+      }
+    }
+    $query->execute();
+    // Reset the taxonomy term static variables.
+    taxonomy_terms_static_reset();
+
+    // Invoke the taxonomy hooks.
+    module_invoke_all("taxonomy_term_$op", $term);
+    module_invoke_all("entity_$op", $term, 'taxonomy_term');
+    unset($term->original);
+
+
+  }
+  else {
+    $term->original = $original;
+    $status = taxonomy_term_save($term);
+  }
+  return $status;
+}
+
+/**
+ * Saves the vocabulary as a specific vid.
+ *
+ * @param object $vocabulary
+ *   The vocabulary to entry to save.
+ *
+ * @return Status constant
+ *   Either SAVED_NEW or SAVED_UPDATED is returned.
+ */
+function rc_taxonomy_terms_vocabulary_save($vocabulary) {
+  if (taxonomy_vocabulary_load($vocabulary->vid) == FALSE) {
+    $status = drupal_write_record('taxonomy_vocabulary', $vocabulary);
+    taxonomy_vocabulary_static_reset();
+    field_attach_create_bundle('taxonomy_term', $vocabulary->machine_name);
+    module_invoke_all('taxonomy_vocabulary_insert', $vocabulary);
+    module_invoke_all('entity_insert', $vocabulary, 'taxonomy_vocabulary');
+  }
+  else {
+    $status = taxonomy_vocabulary_save($vocabulary);
+  }
+  return $status;
+}
+

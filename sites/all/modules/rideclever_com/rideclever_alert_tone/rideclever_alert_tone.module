@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RideClever alert tone feature.
+ */
+
+include_once 'rideclever_alert_tone.features.inc';

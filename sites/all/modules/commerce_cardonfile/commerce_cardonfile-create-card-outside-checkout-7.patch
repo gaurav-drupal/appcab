@@ -1,0 +1,369 @@
+diff --git a/commerce_cardonfile.module b/commerce_cardonfile.module
+index a5e41a2..9ba0e77 100644
+--- a/commerce_cardonfile.module
++++ b/commerce_cardonfile.module
+@@ -87,10 +87,10 @@ function commerce_cardonfile_menu() {
+         'payment_method' => $payment_method['method_id'],
+       ));
+       $items['user/%user/cards/add/' . drupal_hash_base64($instance_id)] = array(
+-        'title' => 'Add a !name',
++        'title' => 'Add a card for payments with !name',
+         'title arguments' => array('!name' => $payment_method['display_title']),
+-        'page callback' => 'commerce_cardonfile_create_page',
+-        'page arguments' => array($new_card_data, 1),
++        'page callback' => 'commerce_cardonfile_card_form_page',
++        'page arguments' => array('create', $new_card_data),
+         'access callback' => 'commerce_cardonfile_access',
+         'access arguments' => array('create', $new_card_data, 1),
+         'type' => MENU_LOCAL_ACTION,
+@@ -102,8 +102,8 @@ function commerce_cardonfile_menu() {
+   $items['user/%user/cards/%commerce_cardonfile/edit'] = array(
+     'title' => 'Edit',
+     'description' => 'Update a stored payment method.',
+-    'page callback' => 'commerce_cardonfile_update',
+-    'page arguments' => array(3),
++    'page callback' => 'commerce_cardonfile_card_form_page',
++    'page arguments' => array('update', 3),
+     'access callback' => 'commerce_cardonfile_access',
+     'access arguments' => array('update', 3),
+     'type' => MENU_LOCAL_TASK,
+@@ -451,16 +451,20 @@ function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account =
+     return TRUE;
+   }
+ 
++  // ALLOW access to create new cards to any user with the 'create own card data'
++  // permission when they are accessing to their own profile.
++  if ($op == 'create' && user_access('create own card data') && $account->uid == $user->uid) {
++    return TRUE;
++  }
++
+   // DENY if callback does NOT exist for specific operations
+   if (empty($op_callback)) {
+     return FALSE;
+   }
+ 
+   // ALLOW access for users with permission to manage their own card data.
+-  if (!empty($card_data->uid)) {
+-    if (!empty($user->uid) && $user->uid == $card_data->uid && user_access("$op own card data")) {
+-      return TRUE;
+-    }
++  if ($op != 'create' && user_access("$op own card data") && !empty($card_data->uid) && $account->uid == $card_data->uid) {
++    return TRUE;
+   }
+ 
+   // DENY by default
+@@ -468,15 +472,21 @@ function commerce_cardonfile_access($op = 'view', $card_data = NULL, $account =
+ }
+ 
+ /**
+- * Determines if the current user has access to the account's stored payments.
++ * Determines if the current user has access to the account's stored cards.
+  */
+ function commerce_cardonfile_user_access($account) {
+   global $user;
+ 
+-  // Grant access for any user with administer permission.
+-  if (user_access('administer card data')) {
++  if (user_access('administer card data') || user_access('view any card data')) {
++    // Grant access for any user with administer permission or view permission
++    // to any cards.
+     return TRUE;
+   }
++  elseif ($account->uid != $user->uid) {
++    // Otherwise deny the access if the account doesn't belong to the currently
++    // logged in user.
++    return FALSE;
++  }
+ 
+   // create a stub data array for access checks
+   $card_data_stub = commerce_cardonfile_new(array(
+@@ -489,7 +499,7 @@ function commerce_cardonfile_user_access($account) {
+   }
+ 
+   // load active cards
+-  $stored_cards = commerce_cardonfile_load_multiple($account->uid, NULL, TRUE);
++  $stored_cards = commerce_cardonfile_load_multiple_by_uid($account->uid);
+ 
+   // if no cards, then check create access
+   if (empty($stored_cards)) {
+@@ -501,7 +511,7 @@ function commerce_cardonfile_user_access($account) {
+       }
+ 
+       foreach ($payment_method_instances as $instance_id => $payment_method) {
+-        $card_data_stub['instance_id'] = $instance_id;
++        $card_data_stub->instance_id = $instance_id;
+         if (commerce_cardonfile_access('create', $card_data_stub, $account)) {
+           return TRUE;
+         }
+@@ -898,11 +908,9 @@ function commerce_cardonfile_load_user_default_cards($uid, $instance_id = NULL)
+  * @return Ambigous <A, boolean>
+  */
+ function commerce_cardonfile_new(array $values = array()) {
+-  global $user;
+-
+   $values += array(
+     'card_id' => NULL,
+-    'uid' => $user->uid,
++    'uid' => 0,
+     'payment_method' => '',
+     'instance_id' => '',
+     'remote_id' => '',
+diff --git a/includes/commerce_cardonfile.pages.inc b/includes/commerce_cardonfile.pages.inc
+index 14674b7..b28ddf9 100644
+--- a/includes/commerce_cardonfile.pages.inc
++++ b/includes/commerce_cardonfile.pages.inc
+@@ -25,62 +25,109 @@ function commerce_cardonfile_card_view($card_data, $view_mode) {
+   return entity_view('commerce_cardonfile', array($card_data->card_id => $card_data), $view_mode, NULL, TRUE);
+ }
+ 
+-
+ /**
+- * Displays the form for updating cardonfile data.
+- *
+- * @param object $card_data
+- *   The card on file entity.
++ * Returns the appropriate Card on File form.
+  */
+-function commerce_cardonfile_update($card_data) {
+-  // Set the title of the page.
+-  drupal_set_title(t('Update your @type ending in @number', array('@type' => $card_data->card_type, '@number' => $card_data->card_number)));
++function commerce_cardonfile_card_form_page($op, $card_data) {
++  global $user;
+   $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
+ 
+-  if ($form_calback = commerce_cardonfile_payment_method_callback($payment_method, 'update form callback')) {
+-    return drupal_get_form($form_calback, $card_data);
++  if ($op == 'update') {
++    drupal_set_title(t('Update your @type ending in @number', array('@type' => $card_data->card_type, '@number' => $card_data->card_number)));
++
++    // This is not likely to happen, but if the payment method doesn't implement
++    // the update callback, redirect the user back to the card listing page and
++    // inform them about the error.
++    if (!isset($payment_method['cardonfile']['update callback'])) {
++      drupal_set_message(t('We encountered an error attempting to update your card data. Please try again and contact us if this error persists.'), 'error');
++      drupal_goto('user/' . $card_data->uid . '/cards');
++    }
++  }
++  else {
++    drupal_set_title(t('Add new credit card'));
++    // Card data was initialized with the anonymous user as its owner. Set it
++    // here to the current user, so that the form will receive the complete
++    // information that is needed to save the card.
++    $card_data->uid = $user->uid;
++  }
++
++  if ($form_callback = commerce_cardonfile_payment_method_callback($payment_method, $op . ' form callback')) {
++    return drupal_get_form($form_callback, $op, $card_data);
+   }
+   else {
+-    return drupal_get_form('commerce_cardonfile_update_form', $card_data);
++    return drupal_get_form('commerce_cardonfile_card_form', $op, $card_data);
+   }
+ }
+ 
+ /**
+- * Builds the form for updating cardonfile data.
+- *
++ * Builds the form for creating/updating cardonfile data.
+  */
+-function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
++function commerce_cardonfile_card_form($form, &$form_state, $op, $card_data) {
+   // Load the credit card helper functions from the Payment module.
+   module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
+ 
+-  $form['card_data'] = array(
+-    '#type' => 'value',
+-    '#value' => $card_data,
+-  );
+-
+-  $defaults = array(
+-    'exp_month' => $card_data->card_exp_month,
+-    'exp_year' => $card_data->card_exp_year,
+-  );
+-
+-  $form += commerce_payment_credit_card_form(array(), $defaults);
+-
+-  $form['credit_card']['card_holder'] = array(
+-    '#type' => 'item',
+-    '#title' => t('Card holder'),
+-    '#markup' => $card_data->card_name,
+-    '#weight' => -5,
++  // Pass along information to the validate and submit handlers.
++  $form_state['card_data'] = $card_data;
++  $form_state['op'] = $op;
++
++  $fields = array(
++    'owner' => '',
++    'code' => '',
++    'type' => array(
++      'visa',
++      'mastercard',
++      'amex',
++    ),
+   );
++  $defaults = array();
++  if ($op == 'update') {
++    unset($fields['code']);
++    $defaults = array(
++      'type' => $card_data->card_type,
++      'owner' => $card_data->card_name,
++      'exp_month' => $card_data->card_exp_month,
++      'exp_year' => $card_data->card_exp_year,
++    );
++  }
++  $form += commerce_payment_credit_card_form($fields, $defaults);
++  if ($op == 'update') {
++    $credit_card_types = commerce_payment_credit_card_types();
++    $form['credit_card']['type']['#type'] = 'item';
++    $form['credit_card']['type']['#markup'] = $credit_card_types[$card_data->card_type];
++    $form['credit_card']['number']['#type'] = 'item';
++    $form['credit_card']['number']['#markup'] = 'XXXX - XXXX - XXXX - ' . $card_data->card_number;
++  }
+ 
+-  $form['credit_card']['number'] = array(
+-    '#type' => 'item',
+-    '#title' => t('Card Number'),
+-    '#markup' => 'XXXX - XXXX - XXXX - ' . $card_data->card_number,
++  $payment_method = commerce_payment_method_load($card_data->payment_method);
++  $form['credit_card']['cardonfile_instance_default'] = array(
++    '#type' => 'checkbox',
++    '#title' => t('Use as default card for payments with %method', array('%method' => $payment_method['display_title'])),
++    '#default_value' => FALSE,
+   );
++  // Disable the checkbox if we are adding a new card and the user doesn't have
++  // any other active cards with the same instance ID. Also disable it, if we
++  // are updating the current default card, so the user can't uncheck the
++  // checkbox.
++  $existing_cards = commerce_cardonfile_load_multiple_by_uid($card_data->uid, $card_data->instance_id, TRUE);
++  $default_card = FALSE;
++  if ($op == 'update' && !empty($existing_cards)) {
++    foreach ($existing_cards as $card) {
++      if ($card->instance_default) {
++        if ($card->card_id == $card_data->card_id) {
++          $default_card = TRUE;
++        }
++        break;
++      }
++    }
++  }
++  if (($op == 'create' && !$existing_cards) || ($op == 'update' && $default_card)) {
++    $form['credit_card']['cardonfile_instance_default']['#default_value'] = TRUE;
++    $form['credit_card']['cardonfile_instance_default']['#disabled'] = TRUE;
++  }
+ 
+   $form['submit'] = array(
+     '#type' => 'submit',
+-    '#value' => t('Update card data'),
++    '#value' => ($op == 'create') ? t('Add card') : t('Update card data'),
+     '#suffix' => l(t('Cancel'), 'user/' . $card_data->uid . '/cards'),
+   );
+ 
+@@ -88,47 +135,70 @@ function commerce_cardonfile_update_form($form, &$form_state, $card_data) {
+ }
+ 
+ /**
+- * Form validate handler: update stored card data.
++ * Form validate handler: create/update card data.
+  */
+-function commerce_cardonfile_update_form_validate($form, &$form_state) {
++function commerce_cardonfile_card_form_validate($form, &$form_state) {
+   module_load_include('inc', 'commerce_payment', 'includes/commerce_payment.credit_card');
+ 
+-  // Ensure the expiration date is not being updated to a past date.
+-  $exp_valid = commerce_payment_validate_credit_card_exp_date($form_state['values']['credit_card']['exp_month'], $form_state['values']['credit_card']['exp_year']);
+-
+-  if ($exp_valid !== TRUE) {
+-    form_set_error('credit_card][exp_' . $exp_valid, t('You have specified an expired credit card.'));
++  if ($form_state['op'] == 'create') {
++    commerce_payment_credit_card_validate($form_state['values']['credit_card'], array('form_parents' => array('credit_card')));
++  }
++  else {
++    // Ensure the expiration date is not being updated to a past date.
++    $exp_valid = commerce_payment_validate_credit_card_exp_date($form_state['values']['credit_card']['exp_month'], $form_state['values']['credit_card']['exp_year']);
++    if ($exp_valid !== TRUE) {
++      form_set_error('credit_card][exp_' . $exp_valid, t('You have specified an expired credit card.'));
++    }
+   }
+ }
+ 
+ /**
+- * Form submit handler: update stored card data.
++ * Form submit handler: create/update card data.
+  */
+-function commerce_cardonfile_update_form_submit($form, &$form_state) {
+-  // Update the card data with items from the form.
+-  $card_data = $form_state['values']['card_data'];
++function commerce_cardonfile_card_form_submit($form, &$form_state) {
++  $op = $form_state['op'];
++  $card_data = $form_state['card_data'];
+ 
++  $card_data->card_name = $form_state['values']['credit_card']['owner'];
+   $card_data->card_exp_month = $form_state['values']['credit_card']['exp_month'];
+   $card_data->card_exp_year = $form_state['values']['credit_card']['exp_year'];
++  if ($op == 'create') {
++    $card_data->card_number = substr($form_state['values']['credit_card']['number'], -4);
++    $card_data->card_type = $form_state['values']['credit_card']['type'];
++  }
+ 
+-  // Invoke the payment method's card update callback.
++  // Invoke the payment method's card create/update callback.
+   $payment_method = commerce_payment_method_instance_load($card_data->instance_id);
+-  $callback = $payment_method['cardonfile']['update callback'];
+-
++  $callback = $payment_method['cardonfile'][$op . ' callback'];
++  $success = FALSE;
+   if (function_exists($callback)) {
+-    if (!$callback($form, $form_state, $payment_method, $card_data)) {
+-      // Display a message if we failed to communicate properly with the payment
+-      // gateway in the Card on File update callback.
+-      drupal_set_message(t('We encountered an error attempting to update your card data. Please try again and contact us if this error persists.'), 'error');
+-      $form_state['rebuild'] = TRUE;
+-      return;
++    $callback_return = $callback($form, $form_state, $payment_method, $card_data);
++    if ($callback_return) {
++      if ($op == 'create') {
++        $card_data_save = $callback_return;
++        $confirm_message = t('A new card has been added.');
++      }
++      else {
++        $card_data_save = $card_data;
++        $confirm_message = t('The stored card data has been updated.');
++      }
++      commerce_cardonfile_save($card_data_save);
++      if (!empty($form_state['values']['credit_card']['cardonfile_instance_default'])) {
++        commerce_cardonfile_set_default_card($card_data_save->card_id);
++      }
++      drupal_set_message($confirm_message);
++      $success = TRUE;
+     }
+   }
+ 
+-  commerce_cardonfile_save($card_data);
+-
+-  drupal_set_message(t('The stored card data has been updated.'));
+-
++  if (!$success) {
++    if ($op == 'create') {
++      drupal_set_message(t('We encountered an error attempting to save your card data. Please try again and contact us if this error persists.'), 'error');
++    }
++    else {
++      drupal_set_message(t('We encountered an error attempting to update your card data. Please try again and contact us if this error persists.'), 'error');
++    }
++  }
+   $form_state['redirect'] = 'user/' . $card_data->uid . '/cards';
+ }
+ 
+diff --git a/includes/views/commerce_cardonfile.views_default.inc b/includes/views/commerce_cardonfile.views_default.inc
+index 1913017..6568e3e 100755
+--- a/includes/views/commerce_cardonfile.views_default.inc
++++ b/includes/views/commerce_cardonfile.views_default.inc
+@@ -142,6 +142,9 @@ function commerce_cardonfile_views_default_views() {
+   $handler->display->display_options['arguments']['uid']['summary']['number_of_records'] = '0';
+   $handler->display->display_options['arguments']['uid']['summary']['format'] = 'default_summary';
+   $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
++  $handler->display->display_options['arguments']['uid']['specify_validation'] = TRUE;
++  $handler->display->display_options['arguments']['uid']['validate']['type'] = 'commerce_cof_owner';
++  $handler->display->display_options['arguments']['uid']['validate']['fail'] = 'access denied';
+   /* Filter criterion: Commerce Card on File: Card data status */
+   $handler->display->display_options['filters']['status']['id'] = 'status';
+   $handler->display->display_options['filters']['status']['table'] = 'commerce_cardonfile';

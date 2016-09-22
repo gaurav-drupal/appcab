@@ -1,0 +1,11 @@
+name = RC Ride logs view
+description = An admin permissioned view of all rides and their details.
+core = 7.x
+package = Rideclever
+version = 7.x-1.0
+project = rc_ride_logs_view
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:1
+features[views_view][] = ride_log
+features_exclude[dependencies][views] = views
+project path = sites/all/modules/rideclever_com

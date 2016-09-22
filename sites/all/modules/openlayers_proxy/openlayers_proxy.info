@@ -1,0 +1,6 @@
+name = Openlayers proxy
+description = A proxy server for all the maps (openstreetmap, yahoo, etc) To deal with ssl
+package = Rideclever
+core = 7.x
+
+files[] = openlayers_proxy.module

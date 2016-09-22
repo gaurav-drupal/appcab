@@ -1,0 +1,41 @@
+<?php
+/**
+ * Created by MMWD.
+ * User: Micheas Herman
+ * Email: micheas@mmwd.co
+ * Date: 6/15/13
+ * Time: 2:08 PM
+ *
+ */
+
+/**
+ * Implements hook_entity_info()
+ */
+function geo_location_debug_entity_info() {
+  $return = array(
+    'geo_point' => array(
+      'label' => t('Geo location point'),
+      'plural label' => t('Geo location points'),
+      'entity class' => 'Entity',
+      'controller class' => 'EntityAPIController',
+      'module' => 'geo_location_debug',
+      'base table' => 'geo_location_debug',
+      'fieldable' => FALSE,
+      'entity keys' => array(
+        'id' => 'eid',
+      )
+    )
+  );
+  return $return;
+}
+
+/**
+ * Implements hook_entity_property_info_alter()
+ */
+function geo_location_debug_entity_property_info_alter(&$info){
+  $geo_data = &$info['geo_point']['properties'];
+  $geo_data['unixtimestamp']['type'] = 'date';
+  $geo_data['geounixtimestamp']['type'] = 'date';
+  $geo_data['uid']['type'] = 'user';
+}
+

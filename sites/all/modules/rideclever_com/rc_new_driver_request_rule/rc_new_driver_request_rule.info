@@ -1,0 +1,11 @@
+name = RC New driver request rule
+description = Rule to let driver request
+core = 7.x
+package = RideClever
+version = 7.x-1.0
+project = rc_new_driver_request_rule
+dependencies[] = entity
+dependencies[] = rules
+features[features_api][] = api:1
+features[rules_config][] = rules_new_driver_request
+project path = sites/all/modules/rideclever_com

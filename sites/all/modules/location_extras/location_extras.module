@@ -1,0 +1,334 @@
+<?php
+
+/**
+ * @file
+ * Add extra fields to Location addresses.
+ */
+
+/**
+ * Implements hook_locationapi().
+ */
+function location_extras_locationapi(&$location, $op, $a3 = NULL, $a4 = NULL) {
+  switch ($op) {
+    case 'fields':
+      return array(
+        'first_name' => t('First name'),
+        'last_name' => t('Last name'),
+        'email' => t('Contact email address'),
+        'website' => t('Website URL'),
+        'phone' => t('Phone number'),
+        'cell_phone' => t('Cell phone number'),
+        'alt_phone' => t('Alternate phone number'),
+        'fax' => t('Fax number'),
+        'title' => t('Title'),
+        'unit' => t('Organization unit'),
+        'company' => t('Company'),
+      );
+
+    case 'defaults':
+      return array(
+        'first_name' => array('default' => '', 'collect' => 0, 'weight' => 1),
+        'last_name' => array('default' => '', 'collect' => 0, 'weight' => 2),
+        'email' => array('default' => '', 'collect' => 0, 'weight' => 35),
+        'website' => array('default' => '', 'collect' => 0, 'weight' => 40),
+        'phone' => array('default' => '', 'collect' => 0, 'weight' => 25),
+        'cell_phone' => array('default' => '', 'collect' => 0, 'weight' => 26),
+        'alt_phone' => array('default' => '', 'collect' => 0, 'weight' => 27),
+        'fax' => array('default' => '', 'collect' => 0, 'weight' => 30),
+        'title' => array('default' => '', 'collect' => 0, 'weight' => 3),
+        'unit' => array('default' => '', 'collect' => 0, 'weight' => 4),
+        'company' => array('default' => 0, 'collect' => 0, 'weight' => 0),
+      );
+
+    case 'field_expand':
+      switch ($a3) {
+
+        case 'first_name':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('First name'),
+            '#description' => NULL,
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+          );
+          break;
+
+        case 'last_name':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Last name'),
+            '#description' => NULL,
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+          );
+          break;
+
+        case 'email':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Email'),
+            '#maxlength' => 255,
+            '#description' => t('This email will be made public. So do not use a private email address in this field. You can leave blank.'),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+            '#element_validate' => array('location_extras_validate_email'),
+          );
+          break;
+
+        case 'website':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Website'),
+            '#maxlength' => 255,
+            '#description' => t("This establishment's website URL."),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+            '#element_validate' => array('location_extras_validate_url'),
+          );
+          break;
+
+        case 'phone':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Phone number'),
+            '#size' => 31,
+            '#maxlength' => 31,
+            '#description' => t('Format: XXX-XXX-XXXX.'),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+            '#element_validate' => array('location_extras_validate_phone'),
+          );
+          break;
+
+        case 'cell_phone':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Cell phone number'),
+            '#size' => 31,
+            '#maxlength' => 31,
+            '#description' => t('Format: XXX-XXX-XXXX.'),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+            '#element_validate' => array('location_extras_validate_phone'),
+          );
+          break;
+
+        case 'alt_phone':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Alternate phone number'),
+            '#size' => 31,
+            '#maxlength' => 31,
+            '#description' => t('Format: XXX-XXX-XXXX.'),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+            '#element_validate' => array('location_extras_validate_phone'),
+          );
+          break;
+
+        case 'fax':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Fax number'),
+            '#size' => 31,
+            '#maxlength' => 31,
+            '#description' => t('Format: XXX-XXX-XXXX.'),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+            '#element_validate' => array('location_extras_validate_phone'),
+          );
+          break;
+
+        case 'title':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Title'),
+            '#description' => t('The job title, functional position or function of the individual associated with the organization.'),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+          );
+          break;
+
+        case 'unit':
+          return array(
+            '#type' => 'textfield',
+            '#title' => t('Organization unit'),
+            '#description' => t('The unit of the organization.'),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+          );
+          break;
+
+        case 'company':
+          return array(
+            '#type' => 'checkbox',
+            '#title' => t('Company'),
+            '#description' => t('Check this box if this is a business address.'),
+            '#required' => ($a4 == 2),
+            '#default_value' => $location,
+          );
+          break;
+
+      }
+      break;
+
+    case 'save':
+      db_delete('location_extras')
+      ->condition('lid', $location['lid'])
+      ->execute();
+
+      // Get all fields provided by this module.
+      $fields = array(
+        $location['first_name'],
+        $location['last_name'],
+        $location['email'],
+        $location['website'],
+        $location['phone'],
+        $location['cell_phone'],
+        $location['alt_phone'],
+        $location['fax'],
+        $location['title'],
+        $location['unit'],
+        $location['company'],
+      );
+
+      // Remove empty values.
+      $fields = array_filter($fields);
+
+      // Save to the database if values exist.
+      if (!empty($fields)) {
+        $id = db_insert('location_extras')
+        ->fields(array(
+          'lid' => $location['lid'],
+          'first_name' => $location['first_name'],
+          'last_name' => $location['last_name'],
+          'email' => $location['email'],
+          'website' => $location['website'],
+          'phone' => $location['phone'],
+          'cell_phone' => $location['cell_phone'],
+          'alt_phone' => $location['alt_phone'],
+          'fax' => $location['fax'],
+          'title' => $location['title'],
+          'unit' => $location['unit'],
+          'company' => $location['company'],
+        ))
+        ->execute();
+      }
+      break;
+
+    case 'load':
+      $fields = array(
+        'first_name' => '',
+        'last_name' => '',
+        'email' => '',
+        'website' => '',
+        'phone' => '',
+        'cell_phone' => '',
+        'alt_phone' => '',
+        'fax' => '',
+        'title' => '',
+        'unit' => '',
+        'company' => 0,
+      );
+      if ($row = db_query('SELECT * FROM {location_extras} WHERE lid = :lid', array(':lid' => $location['lid']))->fetchObject()) {
+        $fields['first_name'] = $row->first_name;
+        $fields['last_name'] = $row->last_name;
+        $fields['email'] = $row->email;
+        $fields['website'] = $row->website;
+        $fields['phone'] = $row->phone;
+        $fields['cell_phone'] = $row->cell_phone;
+        $fields['alt_phone'] = $row->alt_phone;
+        $fields['fax'] = $row->fax;
+        $fields['title'] = $row->title;
+        $fields['unit'] = $row->unit;
+        $fields['company'] = $row->company;
+      }
+      return $fields;
+
+    case 'delete':
+      db_delete('location_extras')
+      ->condition('lid', $location['lid'])
+      ->execute();
+      break;
+  }
+}
+
+/**
+ * Validation for website field.
+ * Borrow validation function from the link module.
+ */
+function location_extras_validate_url($element, &$form_state) {
+  if (!empty($element['#value']) && link_validate_url($element['#value']) != LINK_EXTERNAL) {
+    form_error($element, t('Please enter a valid website URL.'));
+  }
+}
+
+/**
+ * Validate contact email address.
+ */
+function location_extras_validate_email($element, &$form_state) {
+  if (!empty($element['#value']) && !valid_email_address($element['#value'])) {
+    form_error($element, t('You must enter a valid e-mail address.'));
+  }
+}
+
+/**
+ * Validate a phone number.
+ */
+function location_extras_validate_phone($element, &$form_state) {
+  if (!empty($element['#value'])) {
+    if (module_exists('transliteration')) {
+      // Allow accented characters.
+      module_load_include('inc', 'transliteration', 'transliteration');
+      $element['#value'] = _transliteration_process($element['#value']);
+    }
+    $pattern = '/
+      [0-9A-Z]{3}-  # Any three numbers or upper case letters, followed by a dash
+      [0-9A-Z]{3}-? # Any three numbers or upper case letters, followed by an optional dash
+      [0-9A-Z]{4}\b # Any four numbers or upper case letters, followed by a word boundary
+    /x';
+    if (preg_match($pattern, $element['#value']) == 0) {
+      form_error($element, t('The field %title does not contain a number in the format XXX-XXX-XXXX.', array('%title' => $element['#title'], '!type' => '')));
+    }
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function location_extras_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+
+/**
+ * Implements hook_token_list().
+ * TODO: update this for D7.
+ */
+function location_extras_token_list($type = 'all') {
+  if ($type == 'node' || $type == 'user' || $type == 'all') {
+    $tokens['location']['location-first-name_N'] = t('Location contact first name (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-last-name_N'] = t('Location contact last name (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-email_N'] = t('Location contact email (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-website_N'] = t('Location website (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-phone_N'] = t('Location Phone number (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-cell-phone_N'] = t('Location cell phone number (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-alt-phone_N'] = t('Location alternate phone number (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-fax_N'] = t('Location Fax number (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-title_N'] = t('Location title (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-unit_N'] = t('Location organization unit (If there are multiple locations per node, N is the iteration, starting with 0)');
+    $tokens['location']['location-unit_N'] = t('Location is company (If there are multiple locations per node, N is the iteration, starting with 0)');
+    return $tokens;
+  }
+}
+
+/**
+ * Preprocess function for location template.
+ */
+function location_extras_preprocess_location(&$vars) {
+  // Add template suggestion for company locations.
+  if (isset($vars['company']) && $vars['company']) {
+    $vars['template_file'] = 'location-company';
+  }
+}

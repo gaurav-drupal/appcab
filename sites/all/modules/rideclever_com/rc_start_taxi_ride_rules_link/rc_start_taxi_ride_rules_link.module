@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC Start taxi ride rules link feature.
+ */
+
+include_once 'rc_start_taxi_ride_rules_link.features.inc';

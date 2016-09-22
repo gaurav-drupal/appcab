@@ -1,0 +1,879 @@
+@import 'colors';
+@import 'fonts';
+@import 'mixins';
+@import 'adminbar';
+@import 'compass/css3';
+@import 'offcanvas';
+
+.container-inline-date .form-item .form-item {
+  float: left;
+  margin: .5em;
+}
+
+html,
+body {
+  background: $grey-f2;
+  color: $grey;
+  height: 100%;
+  min-height: 100%;
+}
+
+h1 {
+  font: {
+    size: 2.3em;
+  }
+}
+
+h2 {
+  font: {
+    size: 2em;
+  }
+}
+
+a {
+  &:link,
+  &:visited {
+    font: {
+      weight: bold;
+    }
+    color: $rc-green;
+  }
+  &:hover {
+    color: $rc-red;
+  }
+}
+
+p {
+  a {
+    &:link,
+    &:visited {
+      &.button {
+        line-height: inherit;
+      }
+    }
+  }
+}
+
+.button {
+  background-color: $dark-blue-grey;
+  color: $white;
+}
+
+.button.success {
+  background-color: #5da423;
+  border: 1px solid #396516;
+  color: $white;
+}
+
+.button.alert {
+  color: $white;
+}
+
+.button:hover {
+  background-color: $dark-grey;
+}
+
+#site-name {
+  display: inline-block;
+  font: {
+    size: 2.5em;
+    weight: normal;
+  }
+  line-height: 1.25;
+  margin: 0;
+  padding: .95em 0 0;
+}
+
+.red {
+  color: $rc-red;
+}
+
+//////////////// MAIN NAVIGATION ///////////////////
+.nav-bar {
+  text-transform: uppercase;
+  background: {
+    color: $grey;
+  }
+}
+
+.nav-bar > li > a:first-child {
+  position: relative;
+  padding: 0 20px;
+  display: block;
+  font: {
+    size: 1.2em;
+    weight: normal;
+  }
+  text: {
+    decoration: none;
+    align: center;
+  }
+}
+
+.nav-bar > li.active {
+  background: $rc-red;
+  border-color: $grey;
+  &:hover {
+    background-color: $rc-green;
+  }
+}
+
+.nav-bar > li > a:hover {
+  background-color: $rc-green;
+}
+
+///////////////// RIDER ICON OVER MAP ///////////////////
+#block-block-1 {
+  left: 47%;
+  position: absolute;
+  text: {
+    align: center;
+  }
+  padding: {
+    top: 50px;
+  }
+  z-index: 10005;
+}
+
+.rider-icon {
+  position: absolute;
+  top: 52%;
+  z-index: 100;
+  left: 50%;
+}
+
+.page-node-add-ride-booker {
+  #edit-actions {
+    width: 75%;
+  }
+}
+
+.page-node-add-ride-booker {
+  #page-title {
+    line-height: 2em;
+    font: {
+      size: 1.2em;
+      weight: bold;
+    }
+    background-color: #CCC;
+    padding-left: 1em;
+    color: #333;
+  }
+}
+
+#page-title {
+  float: left;
+  width: 100%;
+}
+
+/////////////// ADDRESS INPUT/WHERE THE MAP PUTS IT //////////////////
+#edit-field-rider-address-und-0-value {
+  border: none;
+  background-color: #ccc;
+  font: {
+    size: 1.2em;
+    weight: bold;
+  }
+}
+
+//////////////// HOMEPAGE USER REG /////////////////
+fieldset.collapsible {
+  position: relative;
+  padding-top: 2em;
+}
+
+@media only screen and (max-width: 767px) {
+  .reveal-modal-bg {
+    background: {
+      color: $trans;
+    }
+    min-height: 100%;
+    opacity: 1.0 !important;
+  }
+}
+
+.page-node-add-ride-booker .reveal-modal-bg,
+.page-node-add-taxi-ride .reveal-modal-bg {
+  background: $trans;
+  min-height: 100%;
+  opacity: 1.0 !important;
+  z-index: 101;
+}
+
+.reveal-modal {
+  background-color: $trans;
+  border-radius: 16px;
+}
+
+div.messages {
+  padding: 20px 10px;
+  border-radius: 12px;
+}
+
+////////////////// TABS //////////////////
+dl.tabs.pill dd.active a {
+  background: {
+    color: $rc-green;
+  }
+  border: none;
+  color: #fff;
+}
+
+//////////////// USER EDIT ////////////////
+input {
+  &.password-confirm,
+  &.password-field {
+    width: 100%;
+    margin-bottom: 0.4em;
+  }
+}
+
+.confirm-parent,
+.password-parent {
+  clear: left;
+  // LTR */
+  margin: 0;
+  width: 100%;
+  margin-top: -1em;
+}
+
+//////////////// BOTTOM MENU ////////////////
+#block-menu-menu-bottom-menu ul li.leaf {
+  list: {
+    style: {
+      image: none;
+      type: none;
+    }
+  }
+  display: inline;
+  a {
+    &:link,
+    &:visited {
+      color: $white;
+    }
+  }
+  text-transform: uppercase;
+}
+
+#footer-last {
+  background-color: $rc-green;
+  margin-bottom: 0;
+  ul.menu {
+    margin-top: .5em;
+  }
+
+}
+
+@media screen and (max-width: 768px) {
+  #footer-last {
+    background-color: $trans8;
+    margin-bottom: 0;
+    ul.menu {
+      margin-top: .5em;
+    }
+  }
+  #block-menu-menu-bottom-menu ul li.leaf a:link,
+  #block-menu-menu-bottom-menu ul li.leaf a:visited {
+    color: $grey-e2;
+  }
+  #block-menu-menu-bottom-menu ul li.leaf {
+    background-color: $trans;
+    @include border-radius(2px);
+    padding: 5px;
+  }
+}
+
+.front #footer-last {
+  background-color: transparent;
+  margin-top: 0;
+}
+
+.bottom-bar {
+  margin-top: 1em;
+}
+
+///////////////// MAP ON DEVICE LANDSCAPE MODE ///////////////
+@media screen and (orientation: landscape) and (max-width: 768px) {
+  #edit-field-red-icon,
+  #edit-field-loc {
+    display: none !important;
+  }
+}
+
+///////////////////// ALL AVAILABLE DRIVERS PAGE ////////////////////
+.page-node-495 #page-title {
+  background: {
+    color: $rc-green;
+  }
+  color: $white;
+  font: {
+    size: 1.5em;
+  }
+  padding: .3em;
+}
+
+#featured {
+  background: {
+    image: inline-image('spinner.gif');
+    position: center center;
+    repeat: no-repeat;
+  }
+  height: 295px;
+  img {
+    display: none;
+  }
+  &.orbit {
+    background: none;
+    img {
+      display: block;
+    }
+  }
+}
+
+///////////////////// CUSTOM USER REGISTRATION FORM /////////////////////
+#edit-account,
+#myModal2 {
+  .label.secondary {
+    line-height: 2.5em;
+  }
+}
+
+.reveal-modal {
+  z-index: 120;
+}
+
+#edit-profile-main-field-billing-und-profiles-0-field-credit-card-type-und {
+  margin-bottom: 10px;
+}
+
+///////////////// PANEL CALLOUT CUSTOMIZATIONS ////////////////
+.panel.callout {
+  background: $rc-green;
+  border-color: #2284a1;
+  color: #fff;
+  @include box-shadow(inset 0px 1px 0px rgba(255, 255, 255, 0.5));
+}
+
+// temporary hack
+.views-field-register-link {
+  @include border-radius(3px);
+  background-color: $rc-green;
+  border: 1px solid #666;
+  cursor: pointer;
+  display: inline-block;
+  font: {
+    family: $helvetica;
+    size: 14px;
+    weight: bold;
+  }
+  line-height: 1;
+  margin: 0;
+  outline: none;
+  padding: 10px 20px 11px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  @include transition(background-color 0.15s ease-in-out);
+}
+
+//////////////// FRONTPAGE CSS TO MAKE "USER" STUFF DISAPPEAR /////////////////
+// Needs fixed this also makes the user login button disappear on the 
+// password reset page.
+// 
+// we probably need to get rid of this altogether and figure out the proper way
+// to get rid of the .tab elements on the home page.
+// -- micheas
+.not-logged-in {
+  &.page-user {
+    #block-system-main,
+    .tabs {
+      display: none;
+    }
+  }
+  &.page-user-reset {
+    #block-system-main,
+    .tabs {
+      display: block;
+    }
+
+  }
+}
+
+.not-logged-in.page-user-password #block-system-main {
+  display: block;
+}
+
+//////////// RIDE PAGE STUFF ///////////////
+#block-views-thedirverlinks-block .button.radius {
+  min-width: 15em;
+  margin-top: 1em;
+}
+
+////////////// DRIVER ON/OFF DUTY LINKS //////////////
+.button {
+  a {
+    &:link,
+    &:hover,
+    &:visited {
+      color: $white;
+    }
+  }
+}
+
+.view-thedirverlinks .button {
+  margin: 1em 0;
+}
+
+//////////////// RIDE ACCEPT PAGE ////////////////////
+.node-type-ride-booker #main,
+.node-type-taxi-ride #main {
+  background-color: $trans;
+  color: white;
+}
+
+/////////////// STATUS MESSAGES /////////////////
+div.status, table tr.ok {
+  background-color: #5da423;
+  color: #FFF;
+  font-size: 2em;
+}
+
+.reveal div.error, table tr.error {
+  background-color: $rc-red;
+  color: #FFF;
+  font-size: 2em;
+}
+
+div.error, table tr.error {
+  background-color: $rc-red;
+  color: #FFF;
+  font-size: 1em;
+}
+
+div.error {
+  background-image: none;
+}
+
+.reveal-modal .close-reveal-modal {
+  font-size: 22px;
+  font-size: 3em;
+  line-height: .5;
+  position: absolute;
+  top: 8px;
+  right: 11px;
+  color: #d2232a;
+  text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.6);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.reveal-modal {
+  z-index: 1300;
+}
+
+div.messages ul li {
+  list-style-image: none;
+  font-size: 1.4em;
+}
+
+////////////// CHECKOUT OVERRIDES /////////////////
+.form-submit {
+  width: auto;
+  background: $rc-green;
+  border: 1px solid #1e728c;
+  @include box-shadow(0 1px 0 rgba(255, 255, 255, 0.5) inset);
+  color: white;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+  margin: 0;
+  outline: none;
+  padding: 10px 20px 11px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  @include transition(background-color 0.15s ease-in-out);
+  /// Hovers */ /* Sizes */ /* Colors */ /* Radii */ /* Layout */ /* Disabled ---------- */
+  margin-right: .5em;
+}
+
+.checkout-cancel.form-submit {
+  width: auto;
+  background: $rc-red;
+  border: 1px solid #1e728c;
+  @include box-shadow(0 1px 0 rgba(255, 255, 255, 0.5) inset);
+  color: white;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+  margin: 0;
+  outline: none;
+  padding: 10px 20px 11px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  @include transition(background-color 0.15s ease-in-out);
+  /// Hovers */ /* Sizes */ /* Colors */ /* Radii */ /* Layout */ /* Disabled ---------- */
+  margin-left: .5em;
+}
+
+.commerce_payment select {
+  width: 48%;
+  float: left;
+}
+
+/////////////// TABS //////////////
+dl.tabs.pill dd a {
+  @include border-radius(3px);
+  background: $trans;
+  height: 26px;
+  line-height: 26px;
+  color: $grey-e2;
+  margin-bottom: .5em;
+}
+
+////////////////// SPECIAL NAV FOR DEVICES /////////////////
+@media screen and (max-width: 767px) {
+  .menu-709.first a {
+    background-image: inline-image("cariconx2.png");
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: 5px;
+  }
+  .menu-1452.last a,
+  .menu-1447.last a,
+  .menu-1444.last a,
+  .menu-1449.last a,
+  .menu-1446.last a {
+    background-image: inline-image("littletaxi.png");
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: 5px;
+  }
+  .nav-bar > li > a:first-child {
+    font-weight: bold;
+    font-size: 1em;
+    padding: 0 5px 0 42px;
+  }
+}
+
+///////////////TAXI PICKUP PAGE ///////////////
+@media screen and (max-width: 767px) {
+  .page-node-add-taxi-ride {
+    background: {
+      image: inline-image("check2.png");
+      repeat: repeat-y;
+    }
+  }
+  .page-node-add-taxi-ride .button.success {
+    background-color: rgba(93, 164, 35, 0.95);
+    border: 1px solid #396516;
+  }
+  .page-node-add-taxi-ride #edit-field-rider-address-und-0-value,
+  .page-node-add-ride-booker #edit-field-rider-address-und-0-value {
+    border: none;
+    background-color: rgba(255, 255, 255, .95);
+    font-size: 1.2em;
+    font-weight: normal;
+    font-family: courier;
+    color: $black;
+    background: {
+      image: inline-image("url.png");
+      size: contain;
+      repeat: no-repeat;
+      position: left;
+    }
+    padding-left: 2em;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .nav-bar>li {
+    float: none;
+    display: block;
+    border-right: none;
+    @include border-radius(3px);
+    background-color: #333;
+    margin-bottom: 3px;
+  }
+  .nav-bar {
+    background-color: none;
+    background: none;
+  }
+}
+
+.node-taxi_ride-form,
+.node-ride_booker-form {
+  .reveal-modal {
+    .close-reveal-modal {
+      color: $white;
+      font: {
+        weight: bold;
+        size: 1em;
+      }
+    }
+  }
+}
+
+.ride-popup {
+  margin-left: 1em;
+  padding-bottom: 1em;
+  #field-start-time-address {
+    width: 100%;
+  }
+}
+
+#field-start-time-add-more-wrapper {
+  margin-top: 1em;
+}
+
+////////////// LOGGED IN USER PAGE ////////////////
+@media screen and (min-width: 768px) {
+  .page-user.logged-in #main {
+    position: absolute;
+    top: 170px;
+    max-width: 940px;
+    background-color: $trans;
+    padding: 1em;
+    color: $white;
+  }
+  .page-user {
+    &.logged-in {
+      &.page-user-edit,
+      &.page-user-orders,
+      &.page-user-invoices,
+      &.page-user-stored-payment-methods,
+      &.page-user-my-scheduled-rides {
+        #main {
+          position: relative;
+          top: 0;
+          padding-top: 0;
+          background: none;
+          color: $dark-grey;
+        }
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .page-user {
+    &.logged-in {
+      #main {
+        position: absolute;
+        top: 120px;
+        padding-top: 1em;
+        z-index: 1200;
+      }
+    }
+  }
+  .page-user {
+    &.logged-in {
+      &.page-user-edit,
+      &.page-user-orders,
+      &.page-user-invoices,
+      &.page-user-stored-payment-methods,
+      &.page-user-my-scheduled-rides {
+        #main {
+          position: relative;
+          top: 0;
+          padding-top: 0;
+        }
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 767px) {
+  #block-system-main {
+    clear: both;
+  }
+  .page-user.logged-in.page-user-my-scheduled-rides #main {
+    position: relative;
+    top: 0;
+    padding-top: 1em;
+    z-index: 1200;
+  }
+}
+
+////////////// THE NAG MODAL ///////////////
+.taxinag {
+  background: {
+    image: inline-image("littletaxi.png");
+    repeat: no-repeat;
+    size: contain;
+    position-x: -20;
+    color: $white;
+  }
+  padding: 3px 5px 3px 40px;
+  border: 1px solid $dark-grey;
+  @include border-radius(3px);
+  a {
+    &:link,
+    &:visited {
+      color: $rc-green;
+    }
+  }
+}
+
+.messages {
+  &.status {
+    font-size: 1.4em;
+    line-height: 1.3em;
+    a {
+      &:link,
+      &:visited {
+        color: $rc-green;
+      }
+    }
+  }
+}
+
+.ccspecial {
+  background: {
+    image: inline-image("credit-cards.png");
+    repeat: no-repeat;
+    size: contain;
+    color: white;
+  }
+  padding: 5px 8px 5px 40px;
+  @include border-radius(3px);
+  border: solid 1px $dark-grey;
+}
+
+.message-verbiag {
+  background: $message-gradient;
+  margin: 1em 0;
+  @include border-radius(3px);
+  color: $black;
+  border: 1px solid #666;
+  line-height: 1.3em;
+  padding: 1em;
+  font-size: 1em;
+}
+
+div {
+  &.status {
+    background-image: none;
+  }
+  &.messages {
+    padding: 20px 10px;
+  }
+}
+
+// override for openlayers maps may need changed in the future
+
+.olLayerGrid,
+.olTileImage {
+  max-width: 256%;
+}
+
+#OpenLayers.Control.Attribution_109 a:link {
+  display: none;
+}
+
+/*//////////// TAXI ROLE CLASS ///////////////*/
+.sftaxi .usertabs {
+  display: none;
+}
+.sftaxi .menu-1449.first.last{
+ display:none;
+ }
+.view.view-ondutyoffduty.view-id-ondutyoffduty.view-display-id-block_1 {
+  margin-bottom: 2em;
+}
+
+#block-views-driver-account-edit-block-1 {
+}
+
+#block-views-driverlinks-block-1 {
+ 
+}
+
+.jplay {
+  display: block;
+  position: fixed;
+  right: 1px;
+  bottom: 1px;
+  z-index: 98715;
+}
+
+// Change out the drupal throbber with one that works with foundation.
+html {
+  &.js {
+    input {
+      &.form-autocomplete {
+        background: {
+        //color: red;
+          image: inline-image('throbber-off.png');
+          size: contain;
+          position: right center;
+        }
+      }
+      &.throbbing {
+        background: {
+        //color: green;
+          image: inline-image('throbber-on.gif');
+          size: contain;
+          position: right center;
+        }
+      }
+    }
+  }
+}
+/*//////////// Accept Button ////////////////*/
+.large.button.alert.reject {
+   margin-top: 100px;
+}
+.jGrowl-header {
+   font-size: 20px !important;
+}
+#jGrowl .large.button.success{
+ min-height:500px;
+ font-size:35px;
+ }
+div.jGrowl.center{
+ left:0;
+ z-index:1300;
+ width:100%;
+ }
+div.jGrowl div.jGrowl-notification, div.jGrowl div.jGrowl-closer {
+  background-color: #000;
+  opacity: 100;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=85)";
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=85);
+  zoom: 1;
+  width: 100%;
+	height:100%;
+  padding: 10px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-family: Tahoma,Arial,Helvetica,sans-serif;
+  font-size: 1em;
+  text-align: left;
+  display: none;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  position: relative;
+  z-index: 1300;
+}
+body.page-user.driver{
+ overflow:hidden;
+ max-height:400px;
+ }
+ /*////////////// BLOCK MAP FROM DRIVERS ////////////////*/
+ .lataxi { 
+   #block-bean-every-driver-available{
+  display:none;
+	}
+	#footer-last{
+	 position:absolute;
+	 bottom:0;
+	 }
+}

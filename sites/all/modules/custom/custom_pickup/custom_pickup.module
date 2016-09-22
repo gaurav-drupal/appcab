@@ -1,0 +1,1124 @@
+<?php
+/**
+ * @file
+ * Handles all of the custom pickup functions
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function custom_pickup_menu() {
+  $items = array();
+
+  $items['pickup'] = array(
+    'title'            => 'Rides Available',
+    'page callback'    => 'custom_pickup_output',
+    'access arguments' => array('access content'),
+  );
+
+  $items['pickup/admin'] = array(
+    'title'            => 'Rides Available',
+    'page callback'    => 'custom_pickup_output',
+    'access arguments' => array('access content'),
+  );
+	
+  $items['pickup/get_customer_loc'] = array(
+    'title'            => 'Customer location',
+    'page callback'    => 'custom_pickup_get_customer_loc',
+    'access arguments' => array('access content'),
+  );
+	
+  $items['pickup/get_avail_drivers_location'] = array(
+    'title'            => 'Driver location',
+    'page callback'    => 'custom_pickup_get_driver_loc',
+    'access arguments' => array('access content'),
+  );
+  $items['edit_schedule'] = array(
+    'title'            => 'Driver location',
+    'page callback'    => 'editschedule',
+    'access arguments' => array('access content'),
+  );
+ $items['delete_schedule/%'] = array(
+    'title'            => 'Driver location',
+    'page callback'    => 'deleteschedule',
+    'access arguments' => array(1),
+    'access callback' => TRUE, 
+
+  );
+   $items['getEstimatedTime'] = array(
+    'title'            => 'Driver location',
+    'page callback'    => 'getEstimatedTime',
+    'access callback' => TRUE, 
+
+  );
+   $items['testCancelRide'] = array(
+    'title'            => 'Cancel Ride Test',
+    'page callback'    => 'custom_pickup_test_cancel_ride',
+    'access callback' => TRUE, 
+
+  );
+    $items['noti_test'] = array(
+    'title'            => 'Cancel Ride Test',
+    'page callback'    => 'noti_test',
+    'access callback' => TRUE, 
+
+  );
+  $items['custom_pickup/price'] = array(
+        'type' => MENU_NORMAL_ITEM,
+        'access arguments' => array('Add price to node'),
+        'page callback' => 'drupal_get_form',
+        'page arguments'=>array('drupalform_form1')
+      );
+  $items['custom_pickup/pricepay'] = array(
+        'type' => MENU_NORMAL_ITEM,
+        'access arguments' => array('Add tip and commerce item to user card'),
+        'page callback' => 'drupal_get_form',
+        'page arguments'=>array('drupalform_form2')
+      );
+  $items['payride'] = array(
+        'type' => MENU_NORMAL_ITEM,
+        'access arguments' => array('Pay Automatically after 5 minutes from user card'),
+        'page callback' => 'payride',
+        
+      );
+   
+  return $items;
+}
+/**
+ * Implements hook_form_alter().
+ */
+ function custom_pickup_form_alter(&$form, $form_state, $form_id)
+{
+    if($form_id == 'commerce_cardonfile_card_form') {
+        if($form_state['op'] == 'create'){
+            $form['credit_card']['type']['#prefix'] = '<div class="credit-card">';
+            $form['submit']['#suffix'] = '</div';
+        }
+    }
+    return $form;
+} 
+function payride() {
+if($_POST['nid']!=''){
+$node = node_load($_POST['nid']);
+//echo "<pre>";print_r($node);die;
+if($node->field_ride_tip['und'][0]['value'] <= 0 ){
+$tip = $node->field_ride_price['und'][0]['value'] * .2 ;
+$total_price = $node->field_ride_price['und'][0]['value'] + $tip;
+$node->field_ride_tip['und'][0]['value'] = $tip;
+$node->field_order['und'][0]['entity']->commerce_order_total['und'][0]['amount'] = $total_price;
+ 	$node->field_order['und'][0]['entity']->commerce_order_total['und'][0]['data']['components'][0]['price']['amount'] = $total_price;
+node_save($node);
+}
+echo "1";
+
+drupal_set_message(t('Thanks for the ride.20% of '.$node->field_ride_price['und'][0]['value'].' USD has automatically added.Amount '.$total_price.' USD is deducted from your account.'));
+die;
+
+}
+}
+/**
+* Implementation of hook_menu().
+*/
+function drupalform_form1($form, &$form_state) {
+    $node = node_load(arg(1));
+    $form = array();
+
+
+    $form['price']=array(
+        '#type'=>'textfield',
+        '#title'=>t('Enter Amount'),
+        '#description'=>t('Price for ride'),
+     
+      );
+    $form['submit']=array(
+        '#type'=>'submit',
+        '#value'=>t('Submit'),
+        '#submit' => array('save_price'),
+      );
+
+      return $form;
+}
+/**
+ * Submit save_price  save action.
+ */
+function save_price($form, &$form_state) {
+ $node = node_load(arg(1));
+$node->field_ride_price['und'][0]['value'] = $form_state['values']['price'];
+$node->field_order['und'][0]['entity']->commerce_order_total['und'][0]['amount'] = $form_state['values']['price'];
+$node->field_order['und'][0]['entity']->commerce_order_total['und'][0]['data']['components'][0]['price']['amount'] = $form_state['values']['price'];
+node_save($node);
+drupal_set_message(t('Amount '.$form_state['values']['price'].' has been saved and sent to customer.'));
+global $user;
+$user->roles[8] = 'Available';
+user_save($user);
+drupal_goto(user);
+}
+/**
+* Implementation of hook_menu tip amount().
+*/
+function drupalform_form2($form, &$form_state) {
+    $node = node_load(arg(1));
+    $form = array();
+    $form['price']=array(
+        '#type'=>'textfield',
+        '#title'=>t('Minimum Amount to be paid'),
+        '#description'=>t('Price for ride'),
+     	'#value'=> $node->field_ride_price['und'][0]['value'].' USD',
+     	'#disabled'=>'true',
+      );
+    $form['tip']=array(
+        '#type'=>'textfield',
+        '#title'=>t('Tip for this ride'),
+        '#description'=>t('Tip for ride'),
+     	);
+     $form['payment-method'] = array(
+	'#type' => 'radios',
+	'#title' => t('Pay From card'),
+	'#default_value' => 'Card',
+	'#options' => array('Card'=>t('Card Payment'),'Manual'=>t('Pay to Driver')),
+	);
+    $form['submit']=array(
+        '#type'=>'submit',
+        '#value'=>t('Pay'),
+        '#submit' => array('paid_price'),
+      );
+
+      return $form;
+}
+/**
+ * Submit paid_price  save action.
+ */
+function paid_price($form, &$form_state) {
+ $node = node_load(arg(1));
+
+if(isset($form_state['values']['tip']) && $form_state['values']['tip'] > 0){
+$total_price = $form_state['values']['price'] + $form_state['values']['tip'];
+} else {
+$tip = $node->field_ride_price['und'][0]['value'] * .2 ;
+$total_price = $form_state['values']['price'] + $tip;
+}
+if($form_state['values']['payment-method'] == 'Card'){
+
+
+
+//code from end ride API
+	commerce_cart_order_product_line_item_delete($order, $result[0]->line_item_id);
+   	$product=commerce_product_load_by_sku('sf-towncar');
+   	$line_item = commerce_product_line_item_new($product, 1, $node->field_order['und'][0]['target_id']);
+   	commerce_cart_product_add($node->uid,$line_item);
+   	$order=commerce_order_load($node->field_order['und'][0]['target_id']);
+//End code from end ride API
+
+
+	$node->field_order['und'][0]['entity']->commerce_order_total['und'][0]['amount'] = $total_price;
+ 	$node->field_order['und'][0]['entity']->commerce_order_total['und'][0]['data']['components'][0]['price']['amount'] = $total_price;
+ 	$node->field_ride_tip['und'][0]['value'] = $form_state['values']['tip'];
+	node_save($node);
+//commerce_order_save($order);
+
+
+
+
+//code from end ride API
+$query=db_query("SELECT * from commerce_line_item where order_id=".$node->field_order['und'][0]['target_id']);
+   $result=$query->fetchAll();
+   $order=commerce_order_load($node->field_order['und'][0]['target_id']);
+   
+   // charge an order with card on file
+   $query=db_query("SELECT * from commerce_cardonfile where uid=".$node->uid);
+   $card_data=$query->fetchAll();
+   $charge = commerce_payment_order_balance($order);
+   commerce_cardonfile_order_charge_card($order,$charge=array(),$card_data);
+echo "<pre>order: ";print_r($order);echo "</pre>";
+echo "<pre>charge: ";print_r($charge);echo "</pre>";die;
+
+  commerce_checkout_complete($order);
+//End code from end ride API
+
+
+ 	drupal_set_message(t('Thanks for the ride.Amount '.$total_price.' USD will be detected from your card.'));
+
+ } else {
+ 	$node->field_ride_tip['und'][0]['value'] = $form_state['values']['tip'];
+	node_save($node);
+ 	drupal_set_message(t('Thanks for the ride.Amount '.$total_price.' USD has to be paid by you manually.'));
+ 	drupal_goto(user);
+ }
+
+
+//echo "<pre>";print_r($node);die;
+
+
+}
+/*
+function send_android_notification_testing(){
+
+send_android_notification(1,123,1,'APA91bEVEqpICHelpIh2Yyx496M-ndFZgfjgCQuwaaqzX-lLIE6W0F3gt90dtMPu0YA4wPpx9pvIakIv4_yUyW0snKiyqwqTYf1ZX8u7qrllzJVeb5so6Ol5gbySMPqx6XxX1HoUltmrJyh8oss5knGjbI5DPjUlag'); 
+custom_pickup_driver_alert(2821, $uid=1, $rid=null);
+}*/
+/*function custom_pickup_init() {
+  if (strpos($_SERVER['HTTP_USER_AGENT'], 'Safari')!==FALSE) {
+    $default_headers = array(
+      'Expires' => 'Sun, 19 Nov 2016 05:00:00 GMT',
+      'Last-Modified' => gmdate(DATE_RFC1123, REQUEST_TIME),
+      'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
+      'ETag' => '"' . REQUEST_TIME . '"',
+    );
+    foreach($default_headers AS $k => $v) {
+      drupal_add_http_header($k, $v);
+    }
+  }
+}
+*/
+/**
+ * Function that returns all available rides
+ *
+ * @pram string $cck
+ *   The node type that you want to query..
+ *
+ * @param string $cck
+ * @return array
+ *   This returns all available rides as an array of objects
+ */
+ function custom_pickup_test_cancel_ride(){
+ 	global $user;
+	 $nid = $_POST['nid'];
+	 $node = node_load($nid);
+	 if(isset($node->field_ride_event['und'][0]['tid'])){
+	 $rides[0]->nid = $nid;
+	$drivers[0]->uid = $node->field_car_driver['und'][0]['target_id'];
+
+	   send_android_driver_cancel($rides,$drivers);
+		 echo $node->field_ride_event['und'][0]['tid'];die;
+	}else {
+		 echo "error"; die;
+	}
+	 
+ }
+ function send_android_driver_cancel($rides,$drivers){
+  $node=node_load($rides[0]->nid);
+  if(isset($node->field_deny_by_driver['und'])){
+     $uids = explode(',', $node->field_deny_by_driver['und'][0]['value']);
+     for($i=0;$i<count($uids);$i++){
+       $uid[$i]=$uids[$i];
+     }
+  }else{$uidArr=array();}
+    for($i=0;$i<count($drivers);$i++){
+    
+            $user=user_load($drivers[$i]->uid);
+            if($user->field_user_device_id["und"][0]["value"]!='' && isset($user->roles[7]) && !in_array($user->uid,$uidArr)){
+	      $entity_id = $rides[0]->nid;
+	      $deviceArr = $user->field_user_device_id["und"][0]["value"];
+	      $uid = $drivers[$i]->uid;
+	      $data = array('entity_id'=>$entity_id,'uid' => $uid,'device_id' => $deviceArr,'message' => 'Ride has been cancelled');
+	     send_android_notification_cancel($data,$deviceArr);
+              $i=count($drivers);  
+	    }
+    }
+    }
+    function noti_test(){
+    
+    //$entity_id = $_POST['nid'];
+    
+    $entity_id = arg(1);
+    $node = node_load($entity_id);
+    
+    if(isset($node->field_ride_event['und'][0]['tid'])){
+	 
+	$uid = $node->field_car_driver['und'][0]['target_id'];
+	$user_data = user_load($uid);
+$deviceArr = $user_data->field_user_device_id["und"][0]["value"];
+    $data = array('entity_id'=>$entity_id,'uid' => $uid,'device_id' => $deviceArr,'message' => 'Ride has been cancelled');
+       send_android_notification_cancel($data,$deviceArr);
+       
+       
+    
+	}else {
+		 echo "error"; die;
+	}
+    
+    
+    
+    
+    
+    $uid = $user->uid;
+    $user_data = user_load($uid);
+    
+    }
+function send_android_notification_cancel($data,$deviceArr){
+  global $base_url;
+  // Replace with real GCM browser / server API key from Google APIs
+  $apiKey = trim('AIzaSyBmtGl4EAaGwnJbB93wY-WanrjWhR8N7F8');
+   $registrationIDs =array($deviceArr);
+  
+ // echo "<pre>";print_r($data);echo "</pre>";die;
+   $url = 'https://android.googleapis.com/gcm/send';
+  $fields = array(
+                'registration_ids'  => $registrationIDs,
+                'data'              => $data,
+                );
+  // Set request headers (authentication and payload type)
+  $headers = array( 
+                    'Authorization: key=' .$apiKey,
+                    'Content-Type: application/json'
+                );
+               
+  // Open connection
+  $ch = curl_init();
+  // Set the url
+  curl_setopt( $ch, CURLOPT_URL, $url );
+  // Set request method to POST
+  curl_setopt( $ch, CURLOPT_POST, true );
+  // Set custom headers
+  curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
+  // Get response back as string
+  curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+  // Set post data
+  curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $fields ) );
+   
+
+  //echo 'Curl error: ' . curl_error($ch);
+  // Send the request
+  $result = curl_exec($ch);
+ if(curl_error($ch)){
+    echo $result;
+    }
+  // Close connection
+  curl_close($ch);
+  // Debug GCM response
+  $result_data=json_decode($result);
+   if($result_data->success){
+       echo json_encode($data);
+     //echo "success";
+      } else {
+      echo "error";
+      }
+}
+
+function custom_pickup_available_rides($cck='taxi_ride') {
+  $rides = db_query('
+  SELECT
+    node.nid,
+    start_time.field_start_time_value,
+    field_datageo_lat,
+    field_datageo_lon
+  FROM
+    node
+    left join field_data_field_car_driver as driver
+      on driver.entity_id = node.nid
+    join field_data_field_datageo as geo
+      on geo.entity_id = node.nid
+    join field_data_field_start_time as start_time
+      on start_time.entity_id = node.nid
+  WHERE
+    driver.entity_id is null
+  and
+    node.type = :type', array(':type' => $cck))->fetchAll();
+  return $rides;
+}
+
+/**
+ * Generates a single accept ride button.
+ *
+ * @param int $uid
+ *   The user (driver) that you want to generate the button for.
+ * @return string
+ */
+function custom_pickup_content($uid=0) {
+  global $base_url;
+	
+	$x = 0;
+  $content = '';
+
+  $rides = custom_pickup_available_rides();
+  $x = count($rides);
+
+  $content .= '<div>';
+  while ($x > 0) {
+    $x--;
+    $content .= '<a class="large button success" href="/node/' . $rides[$x]->nid . '/accept">' . t('Pickup Ride at :date', array(':date' => date("Y-m-d H:i:s", $rides[$x]->field_start_time_value)));
+    $content .= custom_pickup_drivers($rides[$x]->field_datageo_lat, $rides[$x]->field_datageo_lon);
+    $content .=  '</a>';
+    $content .=  '<br />';
+    $content .= '<audio src="http://www.appcab.net/alert.mp3" autoplay></audio>';
+   /* $content .= '<audio controls autoplay>
+		 <source src="'.$base_url.'/alert.mp3" type="audio/mpeg">
+		</audio>';*/
+    $content .= '<span class="large button alert reject" href="">' . t('Reject');
+    $content .=  '</span>';
+  }
+
+  $content .= '</div>';
+
+  return $content;
+}
+
+/**
+ * Determines if the request is in a taxi area.
+ *
+ * @param float $lat
+ *   The latitude of the request.
+ * @param float $lon
+ *   The longitude of the request.
+ *
+ * @return array
+ *   An array of the term IDs of the taxis that cover the location.
+ */
+function custom_pickup_taxi_area($lat, $lon) {
+    $taxi_area = db_query('
+      SELECT DISTINCT
+        entity_id "eid"
+      FROM
+        field_data_field_coverage_area
+      WHERE
+          entity_type LIKE :taxonomy
+        AND
+          bundle = :taxi_area
+        AND
+          field_coverage_area_left < :lon
+        AND
+          field_coverage_area_right > :lon
+        AND
+          field_coverage_area_top > :lat
+        AND
+          field_coverage_area_bottom < :lat
+        ', array(
+          ':taxonomy' => 'taxonomy_term',
+          ':taxi_area' => 'taxi_area',
+          ':lat' => $lat,
+          ':lon' => $lon,
+          ))->fetchAll();
+    return $taxi_area;
+}
+
+/**
+ * Create a list of the available drivers for a ride.
+ *
+ * @param float|int $lat
+ *   The latitude of the pickup request.
+ * @param float|int $lon
+ *   The longitude of the pickup request.
+ * @param array $rid
+ *   An array of int Role ID(s) of the drivers you are looking for. (rid 4 is town car driver)
+ *
+ * @return string
+ *   The HTML to embed in a page or block.
+ */
+function custom_pickup_drivers($lat=0, $lon=0, $rid= array(4, 11)) {
+ 
+  $x = 0;
+  $content = '';
+  $drivers = db_query('
+  select
+    profile.uid,
+    entity_id,
+    sqrt( power((field_car_location_lat - :lat ) ,2)  + power((field_car_location_lon - :lon) ,2)) * 69  as distance
+  from
+    field_data_field_car_location
+    join profile
+      on profile.pid = field_data_field_car_location.entity_id
+    join users_roles
+      on users_roles.uid = profile.uid
+  where
+    profile.uid
+      IN
+        (select uid from users_roles where rid = 8)
+  AND
+    users_roles.rid IN (:rid)
+  order by
+    distance desc', array(':lat' => $lat, ':lon' => $lon, ':rid' => $rid))->fetchAll();
+
+  $x = count($drivers);
+  while ($x > 0) {
+    $x--;
+    $content .= '<div class="driver-' . $drivers[$x]->uid . '" >';
+    $content .= t('Driver :uid is :distance miles away.', array(':uid' => $drivers[$x]->uid, ':distance' => number_format($drivers[$x]->distance, 2)));
+    $content .= '</div>';
+  }
+  return $content;
+}
+
+/**
+ * Print out the get ride and cancel buttons.
+ *
+ * @param $nid
+ * @param $distance
+ * @param int $bounty
+ * @param null $start_time
+ * @param $driver
+ * @internal param $drivers
+ * @return string
+ * @internal param $
+ */
+function custom_pickup_alert_button($nid, $distance, $bounty = 0, $start_time = NULL, $driver = -1) {
+
+  global $base_url; 
+  $content = '<a class="large button success" href="/node/' . $nid . '/accept">' . t('Accept');
+  if ($start_time != NULL) {
+    //$content .= date("Y-m-d H:i:s", $start_time) . '<br />' ;
+    $content .= date("H:i:s", $start_time) . '<br />';
+  }
+  $content .= t('The Pickup is :distance miles away', array(':distance' => number_format($distance, 2)));
+  $content .= '<audio src="https://www.black.cr/alert.mp3"  autoplay></audio>';
+  /* $content .= ' <audio controls autoplay>
+   <source src="'.$base_url.'/alert.mp3" type="audio/mpeg">
+  </audio>';*/
+  if ($bounty > 0) {
+    $content .= '<h2>' . t('Bounty of $') . $bounty . '.</h2>';
+  }
+  $content .= '</a>';
+  $content .= '<br />';
+  $content .= '<span class="large button alert reject" href="">' . t('Reject');
+  $content .= '</span>';
+  if ($driver > -1) {
+    $content .= $driver . ' drivers';
+  }
+  return $content;
+}
+
+/**
+ * Finds the next driver to send an alert to and sends the alert via nodejs.
+ *
+ * @param int $nid
+ *   The node ID.
+ * @param int $uid
+ *   The user ID.
+ * @param array|int $rid
+ *   The role ID -- this might need to be reworked.
+ *
+ * @return NULL
+ *   Errors are discarded.
+ */
+function custom_pickup_driver_alert($nid=0, $uid=1, $rid=null) {
+if($rid == null){
+$rid=array(8);
+}
+
+  $path = '/' . drupal_get_path('module', 'custom_pickup');
+  $key = 'vUKtuYvHt3yT8CDBVu3QHq6IB92MwL6w'; // this should be grabbed from a config
+  $node_type = array('taxi_ride',);
+  
+  $rides = db_query('
+  SELECT
+    node.nid,
+    node.uid,
+    start_time.field_start_time_value,
+    field_datageo_lat,
+    field_datageo_lon
+  FROM
+    {node} node
+    left join field_data_field_car_driver as driver
+      on driver.entity_id = node.nid
+    left join field_data_field_ride_event as ride_event
+      on ride_event.entity_id = node.nid
+    join field_data_field_datageo as geo
+      on geo.entity_id = node.nid
+    join field_data_field_start_time as start_time
+      on start_time.entity_id = node.nid
+  WHERE
+    (driver.entity_id is null OR field_ride_event_tid = 5)
+  and
+    node.nid = :nid
+  and
+    ( field_ride_event_tid is NULL OR
+    field_ride_event_tid != 4 )
+  and
+    node.type IN (:type)', array(':type' => $node_type, ':nid' => $nid))->fetchAll();
+
+    
+ 
+  if ( count($rides) === 0 ) {
+   return;
+  }
+  $lat = $rides[0]->field_datageo_lat;
+  $lon = $rides[0]->field_datageo_lon;
+  $message_id = 'ride' . $nid;
+
+  if (isset($rides[0]->field_start_time_value)) {
+      $now = time();
+    $time_to_pickup = $rides[0]->field_start_time_value - $now;
+    if ( $time_to_pickup > (5 * 60 ) ) {
+      $delay = 1000 * ($time_to_pickup - (5 * 60));
+    }
+    else {
+      $delay = 15000;
+    }
+  }
+  else {
+    $delay = 15000; // delay is 15 seconds by default this should be set by getting the scheduled time
+  }
+  $x = 0;
+  $node=node_load($nid);
+  
+  //$next2mins=strtotime("+2 minutes");
+  
+  $drivers = db_query('
+  SELECT
+    distinct(profile.uid),
+    entity_id,
+    sqrt( power((field_car_location_lat - :lat ) ,2)  + power((field_car_location_lon - :lon) ,2)) * 69  AS distance
+  FROM
+    field_data_field_car_location
+    JOIN profile
+      ON profile.pid = field_data_field_car_location.entity_id
+    JOIN users_roles users_roles_0
+      ON users_roles_0.uid = profile.uid
+    JOIN users_roles users_roles_1
+      ON users_roles_1.uid = profile.uid
+  WHERE
+    users_roles_0.rid = :rid
+    AND
+        users_roles_1.rid = 4
+  
+  AND
+    profile.uid IN (SELECT uid FROM users_roles WHERE rid = 8)
+  ORDER BY
+    distance ASC', array(':lat' => $lat, ':lon' => $lon, ':rid' => $rid[0]))->fetchAll();
+   $now= strtotime("now");
+  if(!($node->field_start_time['und'][0]['value']>$now)){
+  //  echo "<pre>"; print_r($drivers); echo "</pre>";
+ //print_r($rides); die;
+  send_android_driver($rides,$drivers);
+  }
+ // echo "<pre>";print_r($drivers);
+  $x = count($drivers);
+//  echo "Count".count($drivers);die;
+ if ($x === 0) {
+
+    $uid = $rides[0]->uid;
+    $subject = t("No drivers");
+    $body = t('We are sorry for the inconvience, Do you want to cancel or wait?'); // TODO: add cancel function.
+   
+   // require_once DRUPAL_ROOT.$path.'/calback.php';
+    $callback = DRUPAL_ROOT.$path . '/callback.php?nid=' . $nid . '&uid=' . $uid . '&rid=8&key=' . $key;
+    $delay = 60000;
+    nodejs_send_user_message($uid, $subject, $body, $callback, $delay);
+    // TODO: add a GCM hook,
+  
+    return;
+  }
+  elseif ($x === 1) {
+    $distance = $drivers[0]->distance;
+    $bounty = 0;
+    $start_time = NULL;
+    //$driver = $x;
+    $driver = -1;
+    $uid = $drivers[0]->uid;
+    $content = '';
+    $content .= custom_pickup_alert_button($nid, $distance, $bounty, $start_time, $driver);
+    $body = $content;
+    $subject = t('Customer Pickup');
+    $callback = DRUPAL_ROOT.$path . '/callback.php?nid=' . $nid . '&uid=' . $uid . '&rid=' . $rid[0] . '&key=' . $key;
+    nodejs_send_user_message($uid, $subject, $body, $callback, $delay);
+     // TO DO: add a GCM hook.
+    
+    return;
+  }
+  $i = 0;
+  $old_uid = $uid;
+  $count=0;
+  while ($x > $i) {
+    $j = $i;
+    $i++;
+    $uid = $drivers[0]->uid;
+    if (isset($rides[0]->field_start_time_value)) {
+      $start_time = $rides[0]->field_start_time_value;
+    }
+    $start_time = NULL;
+    $distance = $drivers[0]->distance;
+    $bounty = 0;
+    //$driver = $x;
+    $driver = -1;
+    $content = '';
+    $content .= custom_pickup_alert_button($nid, $distance, $bounty, $start_time, $driver);
+    $body = $content;
+    $subject = t('Customer Pickup');
+    $callback = $path . '/callback.php?nid=' . $nid . '&uid=' . $drivers[0]->uid . '&rid=' . $rid[0] . '&key=' . $key;
+
+    if ($drivers[$j]->uid  == $old_uid) {
+      if (isset($drivers[$i])) {
+        $uid = $drivers[$i]->uid;
+        //$start_time = $rides[0]->field_start_time_value;
+        $start_time = NULL;
+        $distance = $drivers[$i]->distance;
+        //$driver = $x;
+        $driver = -1;
+        $body = custom_pickup_alert_button($nid, $distance, $bounty, $start_time, $driver);
+        $callback = $path . '/callback.php?nid=' . $nid . '&uid=' . $uid . '&rid=' . $rid[0] . '&key=' . $key;
+
+        $i = $x;
+      }
+    }
+    // TO DO: add a GCM hook.
+   
+      if ($i === $x) {
+        if ($delay > 15000) {
+          $uid = 1;
+         }
+         nodejs_send_user_message($uid, $subject, $body, $callback, $delay);
+       }
+   
+    $count++;
+  }
+
+  return ;
+}
+
+/**
+ * Display output
+ *
+ * @return string
+ *   Returns a single alert suitable for ajax.
+ */
+function custom_pickup_output() {
+  global $user;
+  $uid = $user->uid;
+  
+  header('Content-type: text/plain; charset=UTF-8');
+  header('Content-Disposition: inline');
+  $content  = custom_pickup_content($uid);
+  return $content;
+}
+
+//
+// function custom_pickup_init() {
+//   drupal_add_js( drupal_get_path('module', 'custom_pickup') . '/js/custom_pickup.js');
+// }
+
+
+/**
+* function to return customer location
+* called from script.js
+**/
+function custom_pickup_get_customer_loc() {
+   global $user;
+	 $nid = $_POST['nid'];
+	 $node = node_load($nid);
+	 if ($node->type == 'taxi_ride') {
+		 $lat = $node->field_geoloc['und'][0]['lat'];
+		 $lon = $node->field_geoloc['und'][0]['lng'];
+		 echo json_encode(array("lat"=>$lat,"lon"=>$lon));
+	 } else {
+	   echo "error"; die;
+	 }
+}
+
+/**
+* function to return all drivers' location
+* called from script.js
+**/
+function custom_pickup_get_driver_loc() {
+    global $user;
+	  $query = db_select('profile', 'p');
+		$query->join('field_data_field_car_location', 'f', 'p.pid = f.entity_id');
+		$query->join('users', 'u', 'p.uid = u.uid');
+		$query->join('users_roles', 'r1', 'u.uid = r1.uid and r1.rid = 4');
+		$query->join('users_roles', 'r2', 'u.uid = r2.uid  and r2.rid = 7');
+		$query->join('users_roles', 'r3', 'u.uid = r3.uid  and r3.rid = 8');
+		$query
+			->fields('p', array('pid'))
+			->fields('u', array('name'))
+			->fields('f', array('field_car_location_wkt'))
+			->condition('p.type', 'driver')
+			->condition('r1.rid', '4')
+			->condition('r2.rid', '7')
+			->condition('r3.rid', '8');
+			$result = $query->execute();
+      $driver_array = array(); 
+			while($record = $result->fetchAssoc()) {
+			     //echo $record['field_car_location_wkt'];
+					 $temp_arr = explode('(', $record['field_car_location_wkt']);
+					 $loc_array = array();
+					 if ($temp_arr[1]) {
+					   $temp_arr[1] = str_replace(')', '', $temp_arr[1]);
+						 $loc_array = explode(' ', $temp_arr[1]);
+					 }
+					 $driver_array[$record['name']] = $loc_array;
+			}
+		 echo json_encode($driver_array);
+}
+function send_android_driver($rides,$drivers){
+  $node=node_load($rides[0]->nid);
+  if(isset($node->field_deny_by_driver['und'])){
+     $uids = explode(',', $node->field_deny_by_driver['und'][0]['value']);
+     for($i=0;$i<count($uids);$i++){
+       $uidArr[$i]=$uids[$i];
+     }
+  }else{$uidArr=array();}
+    for($i=0;$i<count($drivers);$i++){
+    
+            $user=user_load($drivers[$i]->uid);
+            if($user->field_device_id["und"][0]["value"]!='' && isset($user->roles[7]) && !in_array($user->uid,$uidArr)){
+	      $entity_id=$rides[0]->nid;
+	      $deviceArr[$i]=$user->field_device_id["und"][0]["value"];
+	      $distance[$i]=$drivers[$i]->distance;
+	      $uidArr[$i]=$drivers[$i]->uid;
+	      send_android_notification($uidArr[$i],$entity_id,$distance[$i],$deviceArr[$i]);
+              $i=count($drivers);  
+	    }
+    }
+    //echo "<pre>";print_r();
+ /* $lat = $rides[0]->field_datageo_lat;
+  $lon = $rides[0]->field_datageo_lon;
+  $rid=array(7,8);
+  
+  if($node->field_car_type['und'][0]['tid']=='10'){
+                $driver_role=11;
+            }else if($node->field_car_type['und'][0]['tid']=='11'){
+                $driver_role=4;
+            }else if($node->field_car_type['und'][0]['tid']=='12'){
+                $driver_role=13;
+            }
+  $drivers = db_query('SELECT users.name AS users_name, users.uid AS uid, profile_users.pid AS profile_users_pid, users.created AS users_created,field_data_field_device_id.field_device_id_value,sqrt( power((field_data_field_car_location.field_car_location_lat -  :lat ) ,2) + power((field_data_field_car_location.field_car_location_lon - :lon) ,2)) * 69 AS distance FROM users users LEFT JOIN profile profile_users ON users.uid = profile_users.uid INNER JOIN users_roles users_roles ON users.uid = users_roles.uid LEFT JOIN field_data_field_device_id field_data_field_device_id ON profile_users.pid = field_data_field_device_id.entity_id LEFT JOIN field_data_field_car_location field_data_field_car_location ON profile_users.pid = field_data_field_car_location.entity_id WHERE users.status != 0 AND users_roles.rid=:rid  AND field_data_field_device_id.field_device_id_value != :device_id ORDER BY distance ASC', array(':lat' => $lat, ':lon' => $lon, ':rid' => $rid[1],':device_id'=>''))->fetchAll();
+  
+ 
+  if(isset($node->field_deny_by_driver['und'])){
+   $uids = explode(',', $node->field_deny_by_driver['und'][0]['value']);
+   for($i=0;$i<count($uids);$i++){
+   $uidArr[$i]=$uids[$i];
+   }
+   }else{$uidArr=array();}
+    for($i=0;$i<count($drivers);$i++){
+    
+            $user=user_load($drivers[$i]->uid);
+           
+            if($drivers[$i]->field_device_id_value!='' && isset($user->roles[7]) && !in_array($user->uid,$uidArr)){
+	      $entity_id=$rides[0]->nid;
+	      $deviceArr[$i]=$drivers[$i]->field_device_id_value;
+	      $distance[$i]=$drivers[$i]->distance;
+	      $uidArr[$i]=$drivers[$i]->uid;
+	      //send_android_notification($uidArr[$i],$entity_id,$distance[$i],$deviceArr[$i]);
+              $i=count($drivers);  
+	    }
+    }*/
+ 
+    
+}
+function send_android_notification($uid,$entity_id,$distance,$deviceArr){
+  global $base_url;
+ 
+  // Replace with real GCM browser / server API key from Google APIs
+  $apiKey = trim('AIzaSyDnkeyJl8ekh1dvMuSEoI7ZIs6W32wGAYI');
+ 
+ 
+  $registrationIDs =array($deviceArr);
+  //$regID=explode(",",$deviceArr);
+ 
+  // Payload data to be sent
+ 
+ $data = array('entity_id'=>$entity_id,'uid' => $uid,'device_id' => $deviceArr,'distance'=>$distance);
+ //$data = array('entity_id'=>$entity_id);
+  // Set request URL to GCM endpoint
+  $url = 'https://android.googleapis.com/gcm/send';
+
+  // Set POST variables (device IDs and payload)
+  $fields = array(
+                'registration_ids'  => $registrationIDs,
+                'data'              => $data,
+                );
+
+  // Set request headers (authentication and payload type)
+  $headers = array( 
+                    'Authorization: key=' .$apiKey,
+                    'Content-Type: application/json'
+                );
+  
+  // Open connection
+  $ch = curl_init();
+
+  // Set the url
+  curl_setopt( $ch, CURLOPT_URL, $url );
+
+  // Set request method to POST
+  curl_setopt( $ch, CURLOPT_POST, true );
+
+  // Set custom headers
+  curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
+
+  // Get response back as string
+  curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+
+  // Set post data
+  curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $fields ) );
+  //echo 'Curl error: ' . curl_error($ch);
+  // Send the request
+  $result = curl_exec($ch);
+ if(curl_error($ch)){
+    echo $result;
+    }
+  // Close connection
+  curl_close($ch);
+ 
+  // Debug GCM response
+  $result_data=json_decode($result);
+ 
+  if($result_data->success){
+       echo json_encode($data);
+      }
+}
+
+function deleteschedule($nid){
+global $user;
+// echo arg(1)." id of node"; die;
+ node_delete(arg(1));
+ echo '/user/'.$user->uid.'/my-scheduled-rides';
+ die;
+ 
+}
+function sendNotification($apiKey, $registrationIdsArray, $messageData )
+{   
+    $headers = array("Content-Type:" . "application/json", "Authorization:" . "key=" . $apiKey);
+    $data = array(
+        'data' => $messageData,
+        'registration_ids' => $registrationIdsArray
+    );
+ 
+    $ch = curl_init();
+ 
+    curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers ); 
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt( $ch, CURLOPT_URL, "https://android.googleapis.com/gcm/send" );
+    curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, 0 );
+    curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, 0 );
+    curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+    curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode($data) );
+ 
+    $response = curl_exec($ch);
+     if ($response === FALSE) {
+            die('Curl failed: ' . curl_error($ch));
+        }
+    if(curl_error($ch)){
+    return  $response;
+    }
+    curl_close($ch);
+ 
+    return $response;
+}
+/*
+ * Edit Scheduled Rides
+ *
+ */
+function editschedule(){
+global $user;
+$picdate = $_POST['field_start_time']['und'][0]['value']['day']."-".$_POST['field_start_time']['und'][0]['value']['month']."-".$_POST['field_start_time']['und'][0]['value']['year'];
+$pictime = $_POST['field_start_time']['und'][0]['value']['hour'].":".$_POST['field_start_time']['und'][0]['value']['minute']." ".$_POST['field_start_time']['und'][0]['value']['ampm'];
+
+$hours = sprintf('%02d',(int) $_POST['field_start_time']['und'][0]['value']['hour']);
+$minutes = sprintf('%02d',(int) $_POST['field_start_time']['und'][0]['value']['minute']);
+$meridiem = (strtolower($_POST['field_start_time']['und'][0]['value']['ampm'])=='am') ? 'am' : 'pm';
+echo $newDate = date('H:i', strtotime("{$hours}:{$minutes} {$meridiem}"));
+
+  $convrtd =  strtotime($picdate.", ".$newDate);
+
+  // echo date("d-m-Y - h:i a",$convrtd);
+  
+ $nid = $_POST['field_start_time']['und'][0]['value']['nid'];
+// echo "<pre>"; print_r($_POST); echo "</pre>";
+// echo $nid;
+// echo $convrtd; 
+
+ $node = node_load($nid);  
+ 
+
+$node->nid = $nid;
+  $node->field_start_time['und'][0]['value'] = $convrtd;
+  
+  node_save($node);
+
+// echo "<pre>"; print_r($user->uid); echo "</pre>"; die;
+drupal_goto('user/'.$user->uid.'/my-scheduled-rides');
+ 
+die;
+
+
+}
+/*
+ * Calculate Time to reach Driver
+ *
+ */
+function getEstimatedTime(){
+$rid= array(8);
+ 
+
+$lat = $_POST['lat'];
+$lon = $_POST['lon'];
+$role_id = $_POST['role_id'];
+ if($role_id=='10'){
+    $driver_role=11;
+  }else if($role_id=='12'){
+    $driver_role=13;
+  }else {
+    $driver_role=4;}
+
+$drivers = db_query('SELECT Distinct
+    profile.uid,
+    entity_id,
+    sqrt( power((field_car_location_lat - :lat ) ,2)  + power((field_car_location_lon - :lon) ,2)) * 69  AS distance
+  FROM
+    field_data_field_car_location
+    JOIN profile
+      ON profile.pid = field_data_field_car_location.entity_id
+    JOIN users_roles users_roles_0
+      ON users_roles_0.uid = profile.uid
+    JOIN users_roles users_roles_1
+      ON users_roles_1.uid = profile.uid
+  WHERE
+    users_roles_0.rid = :rid
+     AND 
+    users_roles_1.rid = :rid1
+  AND
+    profile.uid IN (SELECT uid FROM users_roles WHERE rid = 8)
+  ORDER BY
+    distance ASC', array(':lat' => $lat, ':lon' => $lon, ':rid' => $rid[0],':rid1' => $driver_role))->fetchAll();
+   $distance = $drivers[0]->distance;
+//  echo "<pre>"; print_r($drivers); echo "</pre>";
+    $distance = round($distance,2);
+ // echo $distance; die;
+    // time in seconds
+  if($distance > 0){
+		    // time in seconds
+		    $time = 120 * $distance;
+		      // echo "<pre>"; print_r($time." Seconds"); echo "</pre>";  
+		    if($time>60){
+		    	if($time>3600){
+		    		$filterHr = $time/3600;
+		    		$hour = intval($filterHr);
+		    		
+		    	}
+		    	$filterMin = $time / 60 ;
+		    	$minute = intval($filterMin - ($hour*60));
+		
+		    $seconds = intval($time - (($hour*3600) + ($minute*60))) ;
+		  
+		    } else {
+		    	$seconds = round($time);
+		    	
+		    }
+		    if($seconds > 10){
+		    	$minute += 1;
+		    }
+		  //   echo "<pre>"; print_r($hour."Hrs ".$minute."Minutes ".$seconds."Seconds "); echo "</pre>";exit;
+		if($minute>0 || $hour>0){
+		if(($minute>0) && ($hour<1)){
+		   	$content .= "<p style='padding:17px 0 0;'>Car-<br>";
+		   } else {
+		   	$content .= "<p>Car-<br>";
+		   }
+		
+		 if($hour>0){
+		 	$content .= $hour."Hr ";
+		 }
+		  if($minute>0){
+		 	$content .= $minute."Min ";
+		 }
+		 
+		 	$content .= "</p>";
+		 } else {
+		 	$content = "<p style='padding:25px 0 0;'>Wait...</p>";
+		 }
+ } else {
+    	$content = "<p style='padding:17px 0 0;'>Car-<br>1 Min</p>";
+    }
+ echo $content; exit;
+
+}

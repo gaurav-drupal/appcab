@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * Implements hook_form_BASEFORMID_alter()
+ */
+function rc_maper_form_node_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['field_location']) && isset($_SESSION['ip_geoloc'])) {
+    $language = $form['#node']->language;
+    if (empty($form['field_location'][$language][0]['value']['#default_value'])) {
+      $location = $_SESSION['ip_geoloc']['location']['latitude'];
+      $form['field_location'][$language][0]['value']['#default_value'] = $location;
+    }
+  }
+  if (empty($form['field_address'][$language][0]['value']['#default_value'])) {
+    if (empty($form['field_address'][$language][0]['value']['#default_value'])) {
+      $location = $_SESSION['ip_geoloc']['location']['formatted_address'];
+      $form['field_address'][$language][0]['value']['#default_value'] = $location;
+    }
+  }
+  if (isset($form['field_latitude']) && isset($_SESSION['ip_geoloc'])) {
+    $language = $form['#node']->language;
+    if (empty($form['field_latitude'][$language][0]['value']['#default_value'])) {
+      $location = $_SESSION['ip_geoloc']['location']['latitude'];
+      $form['field_latitude'][$language][0]['value']['#default_value'] = $location;
+    }
+  }
+  if (isset($form['field_longitude']) && isset($_SESSION['ip_geoloc'])) {
+    $language = $form['#node']->language;
+    if (empty($form['field_longitude'][$language][0]['value']['#default_value'])) {
+      $location = $_SESSION['ip_geoloc']['location']['longitude'];
+      $form['field_longitude'][$language][0]['value']['#default_value'] = $location;
+    }
+  }
+}
+
+
+

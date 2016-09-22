@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC Ride logs view feature.
+ */
+
+include_once 'rc_ride_logs_view.features.inc';

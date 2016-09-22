@@ -1,0 +1,7 @@
+<?php
+/**
+ * Implements hook_form_alter altering form_user_register.
+ */
+function rc_register_form_user_register_form_alter(&$form, &$form_state, $form_id) {
+  $form['#theme'] = 'user_register';
+}

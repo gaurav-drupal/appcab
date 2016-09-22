@@ -1,0 +1,149 @@
+<?php
+/**
+ * @file
+ * Allows access to terms in a vocabulary to be limited by user or role.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function related_roles_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#related_roles':
+      $output = '<p>' . t('This module allows administrators to relate roles to terms.') . '</p>';
+      $output .= '<p>' . t('To relate a role to a term, go to Administer >>
+        Content Management >> Taxonomy, and add or edit a term. If the
+        related roles are left blank, the term is not related to a role.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function related_roles_menu() {
+  $items = array();
+  $items['related-roles/autocomplete'] = array(
+    'title' => '',
+    'page callback' => 'related_roles_autocomplete_multiple',
+    'access arguments' => array('access user profiles'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function related_roles_form_alter(&$form, $form_state, $form_id) {
+  // This is the add / edit term form from the taxonomy page.
+  if ($form_id == 'taxonomy_form_term') {
+    // Normally the term is an array, but when deleting terms it becomes an
+    // object. So, we cast it to an object so we can consistently reference it.
+    $term = (object) $form['#term'];
+
+    $form['access'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Related roles'),
+      '#description' => t('To relate this term to a role.'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#attributes' => array('id' => 'fieldset_related_role'),
+      '#weight' => -5,
+      '#tree' => TRUE,
+    );
+
+    $related_roles = array();
+    if (!empty($form['tid']['#value'])) {
+      $result = db_select('related_roles_role')
+        ->fields('related_roles_role')
+        ->condition('tid', $term->tid)
+        ->execute();
+
+      foreach ($result as $row) {
+        $related_roles[] = $row->rid;
+      }
+    }
+
+    // Now, lets do the Roles table.
+    $form['access']['role'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('related roles'),
+      '#description' => t('Select role(s) related to this term.'),
+      '#default_value' => $related_roles,
+      '#options' => user_roles(),
+      '#multiple' => FALSE,
+      '#weight' => 5,
+    );
+
+    $form['#submit'][] = 'related_roles_submit';
+  }
+
+}
+
+/**
+ * Additional submit function for the term form. 
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The state of the current form.
+ */
+function related_roles_submit($form, &$form_state) {
+  // For each role, save the term ID and the role ID.
+  db_delete('related_roles_role')
+  ->condition('tid', $form_state['values']['tid'])
+  ->execute();
+  if (!empty($form_state['values']['access']['role']) && $form_state['values']['op'] == 'Save') {
+    foreach (array_keys(array_filter($form_state['values']['access']['role'])) as $rid) {
+      $id = db_insert('related_roles_role')
+        ->fields(array(
+          'tid' => $form_state['values']['tid'],
+          'rid' => $rid,
+        ))
+      ->execute();
+    }
+  }
+}
+
+/**
+ * Given a term ID, determine the related roles.
+ *
+ * @param int $tid
+ *   The term ID to look up.
+ *
+ * @return array
+ *   returns an array of role ids or NULL if no roles.
+ */
+function related_roles($tid) {
+  $ride = array();
+
+  // Are permissions enabled on this term?
+  if (!(db_query("SELECT COUNT(1) FROM {related_roles_role} WHERE tid = :tid",
+          array(
+            ':tid' => $tid,
+          ))->fetchField())) {
+    return $ride;
+  }
+  // We need to convert user->roles to be useful for us.
+  $users_uid = implode(', ', array_keys($user->roles));
+  // Permissions are enabled, check to see if this user or one of their roles
+  // is allowed.
+  $user_roles = array_keys($user->roles);
+
+  $i = 0;
+
+  $roles = db_query("SELECT DISTINCT rid FROM {related_roles_role} WHERE tid = :tid ",
+  array(
+    ':tid' => $tid,
+  ))->fetchAll();
+  $x = count($roles);
+  while ($x > 0) {
+    $rids[$i] = $roles[$x]->rid;
+    $i++;
+    $x--;
+  }
+
+  return $rids;
+
+}

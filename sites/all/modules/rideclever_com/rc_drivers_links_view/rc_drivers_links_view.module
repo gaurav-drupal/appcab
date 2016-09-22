@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC Drivers Links View feature.
+ */
+
+include_once 'rc_drivers_links_view.features.inc';

@@ -1,0 +1,50 @@
+<?php
+
+function taxi_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'user_register_form' || $form_id == 'user_profile_form' ) {
+   global $user;
+   $role_id = user_role_load_by_name('Taxi Company')->rid;
+     if(isset($user->roles[$role_id])){
+     unset($form['field_i_am_taxi_company'], $form['account']['status']);
+     }
+  }
+
+  if ($form_id == 'user_register_form') {
+     $form['#submit'][] = 'taxi_company_register';
+     if(isset($user->roles[$role_id])){
+        $form['#submit'][] = 'driver_register';
+     }
+  }
+
+}
+
+function driver_register(&$form, &$form_state) {
+  global $user;
+    $driver = $form_state['user'];
+    $edit['data']['created_by'] = $user->uid;
+
+    $driver = user_save($driver,$edit);
+
+}
+
+function taxi_company_register(&$form, &$form_state) {
+  if(isset($form_state['values']['field_i_am_taxi_company']['und'][0]['value']) && $form_state['values']['field_i_am_taxi_company']['und'][0]['value'] ){
+    $user = $form_state['user'];
+    $role = user_role_load_by_name('Taxi Company');
+    $edit['roles'][$role->rid] = $role->rid;
+    $user = user_save($user,$edit);
+
+    $node = new stdClass();
+    $node->title = $user->name;
+    $node->type = "taxi_company";
+    node_object_prepare($node);
+    $node->language = LANGUAGE_NONE; 
+    $node->uid = $user->uid;
+    $node = node_submit($node);
+    node_save($node);
+  }
+}
+
+function taxi_form_user_admin_account_alter(&$form, &$form_state, $form_id) {
+  //print_r($form['accounts']);exit;
+}

@@ -1,0 +1,88 @@
+body {
+    font-size: 12px;
+    margin: 10px 0 0 0;
+    padding: 0;
+}
+
+form, input {
+    margin: 0;
+    padding: 0;
+}
+
+body, input {
+    font-family: 'lucida sans unicode', lucida, helvetica, verdana, arial, sans-serif;
+}
+
+body {
+    background-color: #d8dfea;
+    color: #000000;
+}
+
+input {
+    color: #000000;
+    font-size: 10px;
+    font-weight: bold;
+
+}
+
+.title {
+    border-bottom: 1px solid #000000;
+    color: #000000;
+    font-size: 25px;
+    margin-left: 3px;
+}
+
+.error {
+    background-color: #F8E6CB;
+    border-bottom: 1px solid #97CCA8;
+    color: #000000;
+    font-size: 12px;
+}
+
+#container {
+    background-color: #99CC66;
+    border-radius: 20px;
+    border: 1px solid #CCCDD7;
+    margin: auto;
+    width: 730px;
+}
+
+#menu {
+    background-color: #ffffff;
+    border-radius: 0 30px 0 0;
+    border-left: 1px solid #CCCDD7;
+    border-bottom: 1px solid #CCCDD7;
+    color: #336600;
+    float: right;
+    height: 20px;
+}
+
+.option {
+    border-bottom: 1px solid #ffffff;
+    background-color: #7FB24C;
+    height: 25px;
+}
+
+.shade {
+    background-color: #E1F3CF;
+}
+
+.head {
+    background-color: #A2AACE;
+}
+
+a:link, a:visited {
+    color: #8A3545;
+    text-decoration: none;
+}
+
+a:hover, a:active {
+    background-color: transparent;
+    color: #8A3545;
+    text-decoration: underline;
+}
+
+image {
+    background-color: #ffffff;
+    color: #000000;
+}

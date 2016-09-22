@@ -1,0 +1,15 @@
+name = RC Start taxi ride rules link
+description = The start taxi ride rules link that lets the driver start a ride
+core = 7.x
+package = Rideclever
+php = 5.2.4
+version = 7.x-1.0
+project = rc_start_taxi_ride_rules_link
+dependencies[] = entity
+dependencies[] = rules
+dependencies[] = rules_link
+features[features_api][] = api:1
+features[rules_config][] = rules_link_condition_start_taxi_cash
+features[rules_config][] = rules_link_set_start_taxi_cash
+features[rules_link][] = start_taxi_cash
+project path = sites/all/modules/rideclever_com

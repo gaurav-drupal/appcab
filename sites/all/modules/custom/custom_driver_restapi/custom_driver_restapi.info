@@ -1,0 +1,8 @@
+name = Driver restapi
+description = 'web services for driver native app'
+package = "Trophy profile - MMWD"
+core = "7.x"
+version = "7.x-1.0"
+files[] = custom_driver_restapi/custom_driver_restapi.module
+
+

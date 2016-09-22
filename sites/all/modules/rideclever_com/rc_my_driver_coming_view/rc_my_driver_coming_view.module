@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC My driver coming view feature.
+ */
+
+include_once 'rc_my_driver_coming_view.features.inc';

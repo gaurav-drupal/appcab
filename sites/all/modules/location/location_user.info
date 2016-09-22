@@ -1,0 +1,6 @@
+name = User Locations
+description = Associate locations with users.
+dependencies[] = location
+package = Location
+core = 7.x
+files[] = location_user.module

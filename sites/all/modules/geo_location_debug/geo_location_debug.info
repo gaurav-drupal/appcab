@@ -1,0 +1,6 @@
+name = Geo location debug
+description = A logging and debugging module for the geo location problems from hell.
+package = Rideclever
+core = 7.x
+
+files[] = geo_location_debug.module

@@ -1,0 +1,13 @@
+name = RC Thanks rule
+description = The message that pops up after creating a ride (success message)
+core = 7.x
+package = Rideclever
+php = 5.2.4
+version = 7.x-1.0
+project = rc_thanks_rule
+dependencies[] = custom_pickup
+dependencies[] = entity
+dependencies[] = rules
+features[features_api][] = api:1
+features[rules_config][] = rules_thanks
+project path = sites/all/modules/rideclever_com

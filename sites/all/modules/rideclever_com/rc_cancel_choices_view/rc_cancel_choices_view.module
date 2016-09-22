@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC Cancel choices view feature.
+ */
+
+include_once 'rc_cancel_choices_view.features.inc';

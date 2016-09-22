@@ -1,0 +1,61 @@
+diff --git a/commerce_authnet.module b/commerce_authnet.module
+index 2246c2d..8f88b61 100644
+--- a/commerce_authnet.module
++++ b/commerce_authnet.module
+@@ -157,6 +157,7 @@ function commerce_authnet_commerce_payment_method_info() {
+     'display_title' => t('Credit card'),
+     'description' => t('Integrates Authorize.Net Advanced Integration Method for card not present CC transactions.'),
+     'cardonfile' => array(
++      'create callback' => 'commerce_authnet_cim_cardonfile_create',
+       'update callback' => 'commerce_authnet_cim_cardonfile_update',
+       'delete callback' => 'commerce_authnet_cim_cardonfile_delete',
+     ),
+@@ -776,6 +777,48 @@ function commerce_authnet_form_commerce_cardonfile_update_form_alter(&$form, &$f
+   }
+ }
+ 
++function commerce_authnet_cim_cardonfile_create($payment_method, $pane_form, $pane_values, $billing_addressfield, $card_data = array()) {
++  $pieces = explode(" ", $card_data['card_name']);
++  $firstName = $pieces[0];
++  $lastName = isset($pieces[1]) ? $pieces[1] : "";
++
++  $billing_address = $pane_values['commerce_customer_address']['und'][0];
++  $card_number = $pane_values['credit_card']['number'];
++  $card_expire = $card_data['card_exp_year'] . '-' . $card_data['card_exp_month'];
++  $card_code= $pane_values['credit_card']['code'];
++
++  $api_request_data = array(
++    'profile' => array(
++      'merchantCustomerId' => $card_data['uid'],
++      'description' => $card_data['card_name'],
++      'email' => $pane_values['card_owner']->mail,
++      'paymentProfiles' => array(
++        'billTo' => array(
++          'firstName' => $firstName,
++          'lastName' => $lastName,
++          'address' => $billing_address['thoroughfare'],
++          'city' => $billing_address['locality'],
++          'state' => $billing_address['administrative_area'],
++          'zip' => $billing_address['postal_code'],
++          'country' => $billing_address['country'],
++        ),
++        'payment' => array(
++          'creditCard' => array(
++            'cardNumber' => $card_number,
++            'expirationDate' => $card_expire,
++            'cardCode' => $card_code,
++          ),
++        ),
++      ),
++    ),
++  );
++
++  $xml_response = commerce_authnet_cim_request($payment_method, 'createCustomerProfileRequest', $api_request_data);
++
++  $remote_id = (string) $xml_response->customerProfileId . '|' . (string) $xml_response->customerPaymentProfileIdList->numericString;
++  return $remote_id;
++}
++
+ /**
+  * Card on file callback: updates the associated customer payment profile.
+  */

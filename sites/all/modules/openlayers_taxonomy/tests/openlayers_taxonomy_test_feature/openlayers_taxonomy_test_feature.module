@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the OpenLayers Taxonomy Test Feature feature.
+ */
+
+include_once('openlayers_taxonomy_test_feature.features.inc');

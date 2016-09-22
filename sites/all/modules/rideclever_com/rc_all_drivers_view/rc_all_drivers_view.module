@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC all drivers view feature.
+ */
+
+include_once 'rc_all_drivers_view.features.inc';

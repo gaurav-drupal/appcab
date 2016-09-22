@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC Available rides view feature.
+ */
+
+include_once 'rc_available_rides_view.features.inc';

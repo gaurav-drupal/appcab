@@ -1,0 +1,8 @@
+name = Rideclever taxonmy terms
+description = 'Taxonomy terms that are used by the app'
+core = 7.x
+package = Rideclever
+
+
+dependencies[] = taxonomy
+

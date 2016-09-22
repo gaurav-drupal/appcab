@@ -1,0 +1,13 @@
+name = RC Customer info view
+description = A view that creates a block to attach so the driver can see the customer's information.
+core = 7.x
+package = Rideclever
+php = 5.2.4
+version = 7.x-1.0
+project = rc_customer_info_view
+dependencies[] = views
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:1
+features[views_view][] = customer_info
+features_exclude[dependencies][ctools] = ctools
+project path = sites/all/modules/rideclever_com

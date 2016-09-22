@@ -1,0 +1,119 @@
+<?php
+
+/**
+ * @file
+ * Installation routines for Location additional fields module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function location_extras_schema() {
+  $schema['location_extras'] = array(
+    'description' => 'location_extras.module {location} supplementary table.',
+    'fields' => array(
+      'lid' => array(
+        'description' => '{location}.lid',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'email' => array(
+        'description' => 'Contact email',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'website' => array(
+        'description' => 'Website URL',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'phone' => array(
+        'description' => 'Phone number',
+        'type' => 'varchar',
+        'length' => 31,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'cell_phone' => array(
+        'description' => 'Cell phone number',
+        'type' => 'varchar',
+        'length' => 31,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'alt_phone' => array(
+        'description' => 'Alternate phone number',
+        'type' => 'varchar',
+        'length' => 31,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'fax' => array(
+        'description' => 'Fax number',
+        'type' => 'varchar',
+        'length' => 31,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'first_name' => array(
+        'description' => 'First name',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'last_name' => array(
+        'description' => 'Last name',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title' => array(
+        'description' => 'Title',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'unit' => array(
+        'description' => 'Organization unit',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'company' => array(
+        'description' => 'Company',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('lid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function location_extras_install() {
+  // Change weight.
+  db_update('system')
+  ->fields(array(
+    'weight' => 1,
+  ))
+  ->condition('name', 'location_extras')
+  ->condition('type', 'module')
+  ->execute();
+}

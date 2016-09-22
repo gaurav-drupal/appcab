@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC Customer info view feature.
+ */
+
+include_once 'rc_customer_info_view.features.inc';

@@ -1,0 +1,11 @@
+name = RC Ride events taxonomy
+description = The taxonomy vocab for taxi and towncar rides
+core = 7.x
+package = Rideclever
+php = 5.2.4
+version = 7.x-1.0
+project = rc_ride_events_taxonomy
+dependencies[] = features
+dependencies[] = taxonomy
+features[features_api][] = api:1
+project path = sites/all/modules/rideclever_com

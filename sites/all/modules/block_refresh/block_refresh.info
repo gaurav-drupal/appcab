@@ -1,0 +1,14 @@
+name = Block Refresh
+description = Allows blocks to automatically refresh their content.
+dependencies = block
+package = User interface
+core = 7.x
+
+files[] = block_refresh.module
+files[] = block_refresh.install
+; Information added by drupal.org packaging script on 2011-05-11
+version = "7.x-1.2"
+core = "7.x"
+project = "block_refresh"
+datestamp = "1305135114"
+

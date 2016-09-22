@@ -1,0 +1,13 @@
+name = RideClever Taxi Area Taxonomy
+description = Taxonomy vocabulary for the taxi area taxonomy
+core = 7.x
+package = Rideclever
+version = 7.x-1.0-1
+project = rideclever_taxi_area_taxonomy
+dependencies[] = features
+dependencies[] = geofield
+dependencies[] = taxonomy
+features[features_api][] = api:1
+features[field][] = taxonomy_term-taxi_area-field_coverage_area
+features[taxonomy][] = taxi_area
+project path = sites/all/modules/rideclever_com

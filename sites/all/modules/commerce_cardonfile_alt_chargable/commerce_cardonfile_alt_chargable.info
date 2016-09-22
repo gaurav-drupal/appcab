@@ -1,0 +1,9 @@
+name = Commerce Card On File Alternate Chargable
+description = An Alternate implementation of hook_commerce_cardonfile_order_chargeable_cards. The one provided by commerce_cardonfile itself requires the order to already have a payment method associated with it, this simply skips that check and proceeds normally.
+package = Commerce (contrib)
+
+dependencies[] = commerce_cardonfile
+core = 7.x
+
+; Base module files
+files[] = commerce_cardonfile_alt_chargable.module

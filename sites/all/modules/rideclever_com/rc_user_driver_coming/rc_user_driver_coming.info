@@ -1,0 +1,13 @@
+name = RC User driver coming
+description = The view that contains the overlay for the customer icon when waiting for their car
+core = 7.x
+package = Rideclever
+version = 7.x-1.0
+project = rc_user_driver_coming
+dependencies[] = openlayers_views
+dependencies[] = views
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:1
+features[views_view][] = userdrivercoming
+features_exclude[dependencies][ctools] = ctools
+project path = sites/all/modules/rideclever_com

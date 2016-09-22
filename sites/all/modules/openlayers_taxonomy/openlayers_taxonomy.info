@@ -1,0 +1,15 @@
+ name = OpenLayers Taxonomy
+description = Provides a layer per vocabulary term to OpenLayers utilizing Views.
+core = 7.x
+package = OpenLayers
+dependencies[] = openlayers
+dependencies[] = openlayers_views
+dependencies[] = views
+dependencies[] = taxonomy
+
+; Information added by drupal.org packaging script on 2011-09-05
+version = "7.x-1.0-beta1"
+core = "7.x"
+project = "openlayers_taxonomy"
+datestamp = "1315254428"
+

@@ -1,0 +1,146 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the debug module.
+ */
+
+function sql_constant($string) {
+  return $string;
+}
+
+function geo_location_debug_install() {
+  $sql = <<<EOF
+ ALTER TABLE geo_location_debug change `timestamp` `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Time the report was logged'
+EOF;
+  db_query($sql);
+}
+
+function geo_location_debug_uninstall() {
+ // $sql = 'DROP TABLE geo_location_debug';
+  //db_query($sql);
+}
+
+
+/**
+ * Implements hook_schema().
+ * Commented out because it does not fucking work.
+ */
+function geo_location_debug_schema() {
+  $schema = array();
+
+  $schema['geo_location_debug'] = array(
+    'fields' => array(
+      'eid' => array(
+        'description' => 'The entity ID',
+        'type' => 'serial'
+
+      ),
+      'uid' => array(
+        'description' => 'User ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'timestamp' => array(
+        'description' => 'Time the report was logged',
+        'mysql_type' => 'timestamp',
+        //'default' => TIMESTAMP, // this needs set to CURRENT_TIMESTAMP with a table alter statement in hook_install().
+        'not null' => TRUE,
+      ),
+      'path' => array(
+        'description' => 'The page that the data was collected from',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => FALSE,
+      ),
+      'geotimestamp' => array(
+        'description' => 'Time that the device sends as the timestamp of the geolocation',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => FALSE,
+      ),
+      'unixtimestamp' => array(
+        'description' => 'The unix time stamp of the data saved',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'geounixtimestamp' => array(
+        'description' => 'The unix timestamp that the geolocation was calculated',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'accuracy' => array(
+        'description' => 'Accuracy in meters',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'speed' => array(
+        'description' => 'Velocity in m/s',
+        'type' => 'float',
+        'not null' => FALSE,
+      ),
+      'altitude' => array(
+        'description' => 'The altitude, if the device reports it',
+        'type' => 'float',
+        'not null' => FALSE,
+      ),
+      'altaccuracy' => array(
+        'description' => 'Plus or minus on the reported altitude (should be about twice accuracy unless something strange is going on).',
+        'type' => 'float',
+        'not null' => FALSE,
+      ),
+      'lat' => array(
+        'description' => 'Latitude',
+        'type' => 'float',
+        'not null' => FALSE,
+      ),
+      'lon' => array(
+        'description' => 'Longitude',
+        'type' => 'float',
+        'not null' => FALSE,
+      ),
+      'address' => array(
+        'description' => 'location name from the location service.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => FALSE,
+      ),
+      'city' => array(
+        'description' => 'City from geo location service.',
+        'type' => 'varchar',
+        'length' => 68,
+        'not null' => FALSE,
+      ),
+      'zipcode' => array(
+        'description' => 'zipcode from geo location service.',
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => FALSE,
+      ),
+      'geodata' => array(
+        'description' => 'the json geolocation data from the device.',
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'json' => array(
+        'description' => 'the json address data from the ymap.php lookup.',
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array(
+      'eid',
+    ),
+    'unique key' => array(
+      'uid',
+      'timestamp',
+    ),
+  );
+
+  return $schema;
+}
+

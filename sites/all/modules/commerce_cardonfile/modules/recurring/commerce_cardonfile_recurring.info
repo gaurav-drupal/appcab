@@ -1,0 +1,6 @@
+name = Card on File - Recurring
+description = Basic settings to link Card on File with Recurring
+package = Commerce (contrib)
+core = 7.x
+dependencies[] = commerce_cardonfile
+dependencies[] = commerce_recurring

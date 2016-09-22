@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC My scheduled rides view feature.
+ */
+
+include_once 'rc_my_scheduled_rides_view.features.inc';

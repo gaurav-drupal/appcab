@@ -1,0 +1,39 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the term_permissions module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function openlayers_proxy_schema() {
+  $schema = array();
+
+  $schema['openlayers_proxy_geocode'] = array(
+    'fields' => array(
+      'lat' => array(
+        'description' => 'Latitude',
+        'type'        => 'float',
+        'size'        => 'big',
+        'not null' => TRUE,
+      ),
+      'lon' => array(
+        'description' => 'Longitude',
+        'type'        => 'float',
+        'size'        => 'big',
+        'not null' => TRUE,
+      ),
+      'json' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'lat',
+      'lon',
+    ),
+  );
+
+  return $schema;
+}

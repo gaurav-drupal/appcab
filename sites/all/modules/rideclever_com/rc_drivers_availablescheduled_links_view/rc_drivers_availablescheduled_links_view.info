@@ -1,0 +1,13 @@
+name = RC Drivers AvailableScheduled Links View
+description = The view that creates the available rides and scheduled rides links
+core = 7.x
+package = Rideclever
+php = 5.2.4
+version = 7.x-1.0
+project = rc_drivers_availablescheduled_links_view
+dependencies[] = views
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:1
+features[views_view][] = driverlinks
+features_exclude[dependencies][ctools] = ctools
+project path = sites/all/modules/rideclever_com

@@ -1,0 +1,33 @@
+$col-half: 40px;
+$col-1: 80px;
+$col-2: 160px;
+$col-3: 240px;
+$col-4: 320px;
+$col-5: 400px;
+$col-6: 480px;
+$col-7: 560px;
+$col-8: 640px;
+$col-9: 720px;
+$col-10: 800px;
+$col-11: 880px;
+$col-12: 960px;
+
+$margin: 10px;
+
+$inner-col-1: $col-1 - ($margin * 2);
+$inner-col-2: $col-2 - ($margin * 2);
+$inner-col-3: $col-3 - ($margin * 2);
+$inner-col-4: $col-4 - ($margin * 2);
+$inner-col-5: $col-5 - ($margin * 2);
+$inner-col-6: $col-6 - ($margin * 2);
+$inner-col-7: $col-7 - ($margin * 2);
+$inner-col-8: $col-8 - ($margin * 2);
+$inner-col-9: $col-9 - ($margin * 2);
+$inner-col-10: $col-10 - ($margin * 2);
+$inner-col-11: $col-11 - ($margin * 2);
+$inner-col-12: $col-12 - ($margin * 2);
+
+
+// special widths for the calendar
+$day: 40px;
+

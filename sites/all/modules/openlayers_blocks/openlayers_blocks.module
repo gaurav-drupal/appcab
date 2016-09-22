@@ -1,0 +1,30 @@
+<?php
+/**
+ * @file
+ * Bean plugin for showing Openlayers Map.
+ */
+
+/**
+ * Implements hook_bean_types_api_info().
+ */
+function openlayers_blocks_bean_types_api_info() {
+  return array('api' => 4);
+}
+
+/**
+ * Implements hook_bean_types().
+ */
+function openlayers_blocks_bean_types() {
+  $plugins = array();
+  $plugin_path = drupal_get_path('module', 'openlayers_blocks') . '/plugins/bean';
+  $plugins['openlayers_blocks'] = array(
+    'label' => t('Openlayers Blocks'),
+    'handler' => array(
+      'class' => 'OpenlayersBlocksBean',
+      'parent' => 'bean',
+    ),
+    'path' => $plugin_path,
+    'file' => 'openlayers_blocks.inc',
+  );
+  return $plugins;
+}

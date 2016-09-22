@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC call driver view feature.
+ */
+
+include_once 'rc_call_driver_view.features.inc';

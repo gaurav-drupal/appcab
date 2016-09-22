@@ -1,0 +1,5 @@
+name = Custom Ride Clever Registration
+description = 'Custom form for registration'
+core = "7.x"
+version = "7.x-1.0"
+files[] = rc_register.module

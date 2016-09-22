@@ -1,0 +1,10 @@
+name = RC SFTaxi role
+description = The role of SF Taxi driver module
+core = 7.x
+package = Rideclever
+version = 7.x-1.0
+project = rc_sftaxi_role
+dependencies[] = features
+features[features_api][] = api:1
+features[user_role][] = SF Taxi
+project path = sites/all/modules/rideclever_com

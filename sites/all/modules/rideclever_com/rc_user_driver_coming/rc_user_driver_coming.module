@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC User driver coming feature.
+ */
+
+include_once 'rc_user_driver_coming.features.inc';

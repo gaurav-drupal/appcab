@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * @file
+ * ...
+ */
+
+
+/**
+ * Implements hook_commerce_cardonfile_order_chargeable_cards()
+ *
+ * This is an alternate version of commerce_cardonfile_commerce_cardonfile_order_chargeable_cards
+ * The only difference is that the $order->data['payment_method'] condition is commented out
+ * and the arguent is not passed to commerce_cardonfile_data_load_user_default_cards
+ */
+function commerce_cardonfile_alt_chargable_commerce_cardonfile_order_chargeable_cards($order) {
+  $possible_cards = array();
+
+  // Default card for payment instance
+  //if (!empty($order->data['payment_method'])) {
+    $default_cards = commerce_cardonfile_data_load_user_default_cards($order->uid);
+    if (!empty($default_cards)) {
+      $possible_cards = array_keys($default_cards);
+    }
+  //}
+
+  return $possible_cards;
+}

@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC On-duty-off-duty View feature.
+ */
+
+include_once 'rc_on_duty_off_duty_view.features.inc';

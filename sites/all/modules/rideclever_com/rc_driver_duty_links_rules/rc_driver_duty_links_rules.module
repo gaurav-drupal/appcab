@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC Driver Duty Links Rules feature.
+ */
+
+include_once 'rc_driver_duty_links_rules.features.inc';

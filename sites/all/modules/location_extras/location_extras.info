@@ -1,0 +1,10 @@
+; $Id$
+core = 7.x
+package = Location
+description = "Allows you to add additional fields to a location."
+dependencies[] = location
+dependencies[] = link
+name = "Location Extras"
+files[] = location_extras.install
+files[] = location_extras.module
+files[] = location_extras.views.inc

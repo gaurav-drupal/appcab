@@ -1,0 +1,7 @@
+name = Ride Clever Maper
+description = Map the user's location
+core = "7.x"
+version = "7.x-1.0"
+files[] = rc_maper.module
+
+

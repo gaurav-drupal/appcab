@@ -1,0 +1,9 @@
+name = Authorize.Net Card On File Extra Support
+description = Adds missing Card on File Support for the Commerce_authnet module. This module should ultimately become obsolete once Commerce Authnet adds the support.
+package = Commerce (contrib)
+dependencies[] = commerce_authnet
+dependencies[] = commerce_cardonfile
+core = 7.x
+
+; Base module files
+files[] = commerce_authnet_cof.module

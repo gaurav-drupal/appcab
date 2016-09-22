@@ -1,0 +1,14 @@
+name = Openlayers Blocks
+description = This module let you display any OpenLayers Map in a block.
+package = "OpenLayers"
+core = 7.x
+dependencies[] = bean
+dependencies[] = openlayers
+files[] = plugins/bean/openlayers_blocks.inc
+
+; Information added by drupal.org packaging script on 2012-06-27
+version = "7.x-1.0"
+core = "7.x"
+project = "openlayers_blocks"
+datestamp = "1340824917"
+

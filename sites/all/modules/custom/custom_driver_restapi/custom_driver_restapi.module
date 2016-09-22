@@ -1,0 +1,856 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function custom_driver_restapi_menu() {
+  $items = array();
+  $items['get_auth'] = array(
+    'title'            => 'User Login',
+    'page callback'    => 'user_auth',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['user_register'] = array(
+    'title'            => 'User Register',
+    'page callback'    => 'user_register',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['billed_rides'] = array(
+    'title'            => 'User Register',
+    'page callback'    => 'get_billed_rides',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['scheduled_rides'] = array(
+    'title'            => 'Scheduled Rides',
+    'page callback'    => 'get_scheduled_rides',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['forgot_password'] = array(
+    'title'            => 'User Password',
+    'page callback'    => 'forgot_password',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['duty'] = array(
+    'title'            => 'TownCar Driver',
+    'page callback'    => 'check_duty',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['saveloc'] = array(
+    'title'            => 'TownCar Driver',
+    'page callback'    => 'save_location',
+    'access arguments' => array('access content'),
+     
+  );
+   $items['lastride'] = array(
+    'title'            => 'TownCar Driver',
+    'page callback'    => 'last_ride',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['savedeviceid'] = array(
+    'title'            => 'TownCar Driver',
+    'page callback'    => 'save_deviceID',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['assigndriver'] = array(
+    'title'            => 'TownCar Driver',
+    'page callback'    => 'assign_driver',
+    'access arguments' => array('access content'),
+     
+  );
+   $items['unassigndriver'] = array(
+    'title'            => 'TownCar Driver',
+    'page callback'    => 'unassign_driver',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['startride'] = array(
+    'title'            => 'start_ride',
+    'page callback'    => 'start_ride',
+    'access arguments' => array('access content'),
+     
+  );
+   $items['endride'] = array(
+    'title'            => 'end_ride',
+    'page callback'    => 'end_ride',
+    'access arguments' => array('access content'),
+     
+  );
+   $items['voting'] = array(
+    'title'            => 'Add rating',
+    'page callback'    => 'add_rating',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['cancelride'] = array(
+    'title'            => 'Cancel Ride',
+    'page callback'    => 'cancel_ride',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['printaddress'] = array(
+    'title'            => 'Cancel Ride',
+    'page callback'    => 'Get_Address_From_Google_Maps',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['userlogout'] = array(
+    'title'            => 'Cancel Ride',
+    'page callback'    => 'userlogout',
+    'access arguments' => array('access content'),
+     
+  );
+  $items['drivercoming'] = array(
+    'title'            => 'Cancel Ride',
+    'page callback'    => 'drivercoming',
+    'access arguments' => array('access content'),
+     
+  );
+  return $items;
+}
+function drivercoming(){
+  if($_POST['nid']!=''){
+      $node=node_load($_POST['nid']);
+      if(!empty($node->field_car_driver)){
+	      $user=user_load($node->field_car_driver['und'][0]['target_id']);
+	      $key = array_search('With customer', $user->roles);
+	      if (!$key) {
+	              	if($node->field_ride_price['und'][0]['value'] > 0){
+		        	echo "12";
+		        } else {
+		        	echo "0";
+		        }      
+	      }else{
+	                if($node->field_ride_price['und'][0]['value'] > 0){
+		        	echo "12";
+		        } else {
+		        	echo "1";
+		        }
+	      }
+    }else{
+  	  echo "2";
+    }
+      die;
+   }
+}
+/* 
+* Given longitude and latitude in North America, return the address using The Google Geocoding API V3
+*
+*/
+
+function Get_Address_From_Google_Maps() {
+//$lat='37.7872';$lon='-122.404';
+$lat=$_GET['lat'];
+$lon=$_GET['lon'];
+$url  = "http://maps.googleapis.com/maps/api/geocode/json?latlng=".$lat.",".$lon."&sensor=false";
+
+   $json = drupal_http_request($url);
+   $json=json_encode($json);
+   $data = json_decode($json);
+   $data=json_decode($data->data);
+ //  echo "<pre>";print_r($data);die;
+   $status = $data->status;
+    $address = '';
+   if($status == "OK"){
+      $address = $data->results[0]->address_components[1]->long_name;
+    }
+
+echo $address;die;
+}
+
+
+
+function user_auth(){
+  $tempArr=array();
+  global $base_url;
+  
+  if($_POST['username'] && $_POST['password']){
+        $name=$_POST['username'];
+        $pass=$_POST['password'];
+        
+        
+        if(valid_email_address($name)){
+          $userObj=user_load_by_mail($name);
+          $name=$userObj->name;
+        }else{
+          $userObj=user_load_by_name($name);
+          $name=$userObj->name;
+        }
+         drupal_session_destroy_uid($userObj->uid);
+            /*
+          * Server REST - user.login
+          */
+          // REST Server URL
+          $request_url = $base_url.'/rest/user/login';
+          // User data
+          $user_data = array(
+            'username' => $name,
+            'password' => $pass,
+          );
+          
+          $user_data = http_build_query($user_data);
+          $curl = curl_init($request_url);
+          curl_setopt($curl, CURLOPT_HTTPHEADER, array('Accept: application/json')); // Accept JSON response
+          curl_setopt($curl, CURLOPT_POST, 1); // Do a regular HTTP POST
+          curl_setopt($curl, CURLOPT_POSTFIELDS, $user_data); // Set POST data
+          curl_setopt($curl, CURLOPT_HEADER, FALSE);  // Ask to not return Header
+          curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+          curl_setopt($curl, CURLOPT_FAILONERROR, TRUE);
+          $response = curl_exec($curl);
+         //echo "<pre>";print_r($response);die;
+        if(!empty($response)){
+            $response_arr=json_decode($response);
+            
+            //$response_arr=user_load($response->user->uid);
+            foreach($response_arr->user->roles as $key=>$val){
+                $temp[]= $val;
+               }
+           
+           if(in_array('Driver',$temp)){ 
+               $profile=profile2_load_by_user(user_load($response_arr->user->uid),'driver');
+                $user=user_load($response_arr->user->uid);
+                  $role_name='Available';
+		  $key = array_search($role_name, $user->roles);
+		    if (!$key) {
+		        $roles = user_roles(TRUE);
+		        $rid = array_search($role_name, $roles);
+		        if ($rid) {
+		            $user_roles = $user->roles;
+		            if (is_array($user_roles)) {
+		                $user_roles [$rid] = $role_name;
+		                user_save($user, array('roles' => $user_roles));
+		            }
+		        }
+		    }
+               $profile->field_car_location['und'][0]['lat'] = $_POST['lat'];
+               $profile->field_car_location['und'][0]['lon']= $_POST['long'];
+               // Save the profile2 to the user account.
+               profile2_save($profile);
+               $response_arr->status=TRUE;
+              
+               echo json_encode($response_arr);
+            }else{
+               $response_arr->status=FALSE;
+	       echo json_encode($response_arr); 
+            }
+         }else{
+            $response_arr->status=FALSE;
+	    echo json_encode($response_arr);
+         }
+         die;
+        // Check if login was successful
+        }
+   
+    
+}
+/*
+function user_api_login() 
+{
+	 $tempArr=array();
+	 global $base_url;
+	if($_POST['username'] && $_POST['password']){
+        $name=$_POST['username'];
+        $pass=$_POST['password'];
+        if(valid_email_address($name)){
+          $userObj=user_load_by_mail($name);
+          $name=$userObj->name;
+        }else{
+          $userObj=user_load_by_name($name);
+          $name=$userObj->name;
+        }
+         drupal_session_destroy_uid($userObj->uid);
+        $request_url = $base_url.'/rest/user/login';
+          // User data
+          $user_data = array(
+            'username' => $name,
+            'password' => $pass,
+          );
+          $user_data = http_build_query($user_data);
+          $curl = curl_init($request_url);
+          curl_setopt($curl, CURLOPT_HTTPHEADER, array('Accept: application/json')); // Accept JSON response
+          curl_setopt($curl, CURLOPT_POST, 1); // Do a regular HTTP POST
+          curl_setopt($curl, CURLOPT_POSTFIELDS, $user_data); // Set POST data
+          curl_setopt($curl, CURLOPT_HEADER, FALSE);  // Ask to not return Header
+          curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+          curl_setopt($curl, CURLOPT_FAILONERROR, TRUE);
+          $response = curl_exec($curl);
+        if(!empty($response)){
+            $response_arr=json_decode($response);
+            
+            //$response_arr=user_load($response->user->uid);
+            foreach($response_arr->user->roles as $key=>$val){
+                $temp[]= $val;
+               }
+           
+           
+        if(in_array('Driver',$temp)){
+           $profile = profile2_load_by_user(user_load($response_arr->user->uid),'main');
+           $user = user_load($response_arr->user->uid);
+           $role_name = 'Available';
+           $key = array_search($role_name, $user->roles);
+           if (!$key) {
+             $roles = user_roles(TRUE);
+             $rid = array_search($role_name, $roles);
+             if ($rid) {
+                $user_roles = $user->roles;
+                if (is_array($user_roles)) {
+                    $user_roles [$rid] = $role_name;
+                    user_save($user, array('roles' => $user_roles));
+                  }
+               }
+           }
+           echo "<pre>hi";print_r($profile);echo "</pre>";die;
+               $profile->field_car_location['und'][0]['lat'] = $_POST['lat'];
+               $profile->field_car_location['und'][0]['lon']= $_POST['long'];
+               // Save the profile2 to the user account.
+	           profile2_save($profile);
+	           $response_arr->status=TRUE;
+	           $response_arr->data=user_load($response_arr->user->uid);
+	        }else{
+	          $response_arr->status=FALSE;
+	         echo json_encode($response_arr);  
+ 	       }
+        
+ 	}else{
+            $response_arr->status=FALSE;
+	    echo json_encode($response_arr);
+         }
+         die;
+   }
+} */
+function user_register(){
+        /*
+    * Server REST - user.register
+    */
+    // User data
+    global $base_url;
+   $user_data->name = $_POST['username'];
+    $user_data->mail = $_POST['email'];
+    $user_data->pass = $_POST['password'];
+    $user_data->status = 1;
+   // $user_data->roles[4]='Towncar driver';
+    $user=user_save($user_data,array('pass' => $user_data->pass));
+  
+    if($user->uid){
+                $profile = profile2_create(array('type' => 'main', 'uid' => $user->uid));
+               // Add in the necessary custom fields and values.
+               $profile->field_phone_number['und'][0]['value'] = $_POST['phone_number'];
+               // Save the profile2 to the user account.
+               profile2_save($profile);
+               $profile=profile2_create(array('type' => 'driver', 'uid' => $user->uid));
+               // Add in the necessary custom fields and values.
+               $profile->field_car_location['und'][0]['lat'] = $_POST['lat'];
+               $profile->field_car_location['und'][0]['lon']= $_POST['long'];
+              // Save the profile2 to the user account.
+               profile2_save($profile);
+               $response['user']=user_load($user->uid);
+               $response['status']=TRUE;
+               $response=json_encode($response);
+       
+    }else{
+               $response_arr->status=FALSE;
+               $response=json_encode($response_arr);
+    }
+    echo $response;die;
+  
+    
+    
+}
+function get_billed_rides(){
+    $uid=$_POST['uid'];
+   echo $prev30days=strtotime("-30 days");
+    $query=db_query("SELECT node.title AS node_title, node.nid AS nid, commerce_invoice_commerce_order.invoice_id AS commerce_invoice_commerce_order_invoice_id, commerce_invoice_commerce_order.created AS commerce_invoice_commerce_order_created, commerce_order_field_data_field_order.order_id AS commerce_order_field_data_field_order_order_id, node.created AS node_created, 'commerce_order' AS field_data_commerce_order_total_commerce_order_entity_type,field_data_commerce_order_total.commerce_order_total_amount
+FROM 
+{node} node
+LEFT JOIN {field_data_field_car_driver} field_data_field_car_driver ON node.nid = field_data_field_car_driver.entity_id AND (field_data_field_car_driver.entity_type = 'node' AND field_data_field_car_driver.deleted = '0')
+LEFT JOIN {users} users_field_data_field_car_driver ON field_data_field_car_driver.field_car_driver_target_id = users_field_data_field_car_driver.uid
+LEFT JOIN {field_data_field_order} field_data_field_order ON node.nid = field_data_field_order.entity_id AND (field_data_field_order.entity_type = 'node' AND field_data_field_order.deleted = '0')
+LEFT JOIN {commerce_order} commerce_order_field_data_field_order ON field_data_field_order.field_order_target_id = commerce_order_field_data_field_order.order_id
+LEFT JOIN {field_data_commerce_order_total} field_data_commerce_order_total ON field_data_field_order.field_order_target_id = field_data_commerce_order_total.entity_id 
+LEFT JOIN {commerce_invoice} commerce_invoice_commerce_order ON commerce_order_field_data_field_order.order_id = commerce_invoice_commerce_order.order_id
+WHERE (( (field_data_field_car_driver.field_car_driver_target_id = '".$uid."' ) )AND(( (node.status = '1') AND (commerce_invoice_commerce_order.created > '".$prev30days."') )))
+ORDER BY node_created DESC");
+
+    /*$invoice = db_select('commerce_invoice', 'ci')
+            ->fields('ci', array('invoice_number', 'order_number'));
+    $invoice->leftJoin('commerce_order', 'co', 'ci.order_id = co.order_id');
+    $invoice->condition('ci.uid', 1)
+          ->execute();*/
+    //echo "<pre>";print_r($invoice->fetchAll());
+
+   $result['result']=$query->fetchAll();
+  
+   if(empty($result['result'])){
+     $result['status']=FALSE;
+     echo json_encode($result);
+   }else{
+     $result['status']=TRUE;
+     echo json_encode($result);
+   }
+  die;
+}
+function get_scheduled_rides(){
+    $uid=$_POST['uid'];
+    $now= strtotime("now");
+    $next20min=strtotime("+20 minutes");
+    $query=db_query("SELECT node.title AS node_title, node.nid AS nid, node.uid AS node_uid, users_node.name AS users_node_name, users_node.uid AS users_node_uid, 'node' AS field_data_field_geoloc_node_entity_type, 'node' AS field_data_field_datageo_node_entity_type, 'node' AS field_data_field_start_time_node_entity_type
+FROM 
+{node} node
+LEFT JOIN {users} users_node ON node.uid = users_node.uid
+LEFT JOIN {field_data_field_start_time} field_data_field_start_time ON node.nid = field_data_field_start_time.entity_id AND (field_data_field_start_time.entity_type = 'node' AND field_data_field_start_time.deleted = '0')
+WHERE (( (node.status = '1') AND (node.type IN  ('ride_booker','taxi_ride')) AND field_data_field_start_time.field_start_time_value >= '".$now."' ))");
+//  AND field_data_field_start_time.field_start_time_value <= '".$next20min."'   last condition removed by Gaurav
+ 
+   $result['result']=$query->fetchAll();
+   //echo "<pre>";print_r($result);die;
+   if(empty($result['result'])){
+     $result['status']=FALSE;
+     echo json_encode($result);
+   }else{
+     $result['status']=TRUE;
+    // echo "<pre>";print_r($result);
+     for($i=0;$i<count($result['result']);$i++){
+       $node=node_load($result['result'][$i]->nid);
+       $result['result'][$i]=$node;
+     }
+     
+     echo json_encode($result);
+   }
+  die;
+}
+function last_ride(){
+    $uid=$_POST['uid'];
+    $query=db_query("SELECT node.title AS node_title, node.nid AS nid, node.created AS node_created,votingapi_vote.value
+FROM 
+{node} node
+LEFT JOIN {field_data_field_car_driver} field_data_field_car_driver ON node.nid = field_data_field_car_driver.entity_id AND (field_data_field_car_driver.entity_type = 'node' AND field_data_field_car_driver.deleted = '0')
+LEFT JOIN {votingapi_vote} votingapi_vote ON node.nid = votingapi_vote.entity_id and votingapi_vote.uid= '".$uid."'
+LEFT JOIN {users} users_field_data_field_car_driver ON field_data_field_car_driver.field_car_driver_target_id = users_field_data_field_car_driver.uid
+WHERE (( (users_field_data_field_car_driver.uid = '".$uid."' ) )AND(( (node.status = '1') AND (node.type IN  ('ride_booker','taxi_ride')) )))
+ORDER BY node_created DESC LIMIT 0,1");
+ 
+   $result['result']=$query->fetchAll();
+  //echo "<pre>";print_r($result['result'][0]);die;
+   if(empty($result['result'])){
+     $result['status']=FALSE;
+     echo json_encode($result);
+   }else{
+     $result['status']=TRUE;
+     $result['voting']=$result['result'][0]->value;
+     $node=node_load($result['result'][0]->nid);
+    
+     $profile=profile2_load_by_user(user_load($node->uid),'main');
+    
+     if(empty($node->field_pickup_time) || empty($node->field_ride_event) || empty($node->field_customer_phone) ){
+     $temp=array();
+     $node->field_pickup_time['und']=$temp;
+     $node->field_ride_event['und']=$temp;
+     $node->field_customer_phone['und']=$temp;
+     }
+     $node->customer_phone['und'][0]['value']=$profile->field_phone_number['und'][0]['value'];
+     $node->voting['und'][0]['value']=$result['voting'];
+    /* if($result['voting']!=''){
+     }*/
+     echo json_encode($node);
+   }
+  die;
+
+   
+}
+function forgot_password(){
+
+   $email=$_POST['mail'];
+   $user_data=user_load_by_mail($email);
+    $pass=user_password(6);
+   $user=user_save($user_data,array('pass' => $pass));
+   $user=user_load($user->uid);
+  
+   $module = 'custom_driver_restapi';
+     $key = 'abcd1234';
+     $language = language_default();
+     $params = array(
+       
+       '@Username' =>'Username: '.$user_data->name,
+      
+       '@Password' =>'Password: '.$pass,
+     );
+   drupal_mail($module, $key, $email, $language, $params);
+  
+   if(!$user){
+    
+   echo json_encode($user);
+   }
+   else{
+    
+   echo json_encode($user);
+   }
+   die;
+   
+}
+/**
+* Implements hook_mail().
+*/
+function custom_driver_restapi_mail($key, &$message, $params) {
+  $message['subject'] = t("New Password", $params);
+  $message['body'] = array();
+  $message['body'][] = t("Hello", $params);
+  $message['body'][] = t("New Login Details: @Username @Password", $params);
+}
+function check_duty(){
+  $role=$_POST['duty'];
+  $uid=$_POST['uid'];
+ 
+  $result = db_select('users_roles', 'ur')
+               ->fields('ur')
+               ->condition('uid', $uid,'=')
+               ->condition('rid', 7,'=')
+                ->execute()
+               ->fetchAssoc();
+  if($role=='off'){
+     
+     if(!empty($result)){
+        $num_deleted = db_delete('users_roles')
+           ->condition('uid', $result['uid'])
+           ->condition('rid', $result['rid'])
+           ->execute();
+        if($num_deleted){
+          $user_data=user_load($result['uid']);
+          $user_data->duty='off';
+          echo json_encode($user_data);
+        }
+     }
+  }else{
+       if(empty($result)){
+        $insert = db_insert('users_roles') // Table name no longer needs {}
+               ->fields(array(
+		  'uid' => $uid,
+		  'rid'=> 7
+		))
+		->execute();
+        
+           $user_data=user_load($uid);
+           $user_data->duty='on';
+           echo json_encode($user_data);
+       
+       
+     }
+  }
+   die;
+}
+function save_location(){
+    $uid=$_POST['uid'];
+    $lat=$_POST['lat'];
+    $long=$_POST['long'];
+    $profile=profile2_load_by_user(user_load($uid),'driver');
+    $profile->field_car_location['und'][0]['lat'] = $_POST['lat'];
+    $profile->field_car_location['und'][0]['lon']= $_POST['long'];
+    // Save the profile2 to the user account.
+   profile2_save($profile);
+    $updated_profile=profile2_load_by_user(user_load($uid),'driver');
+    $result['status']=1;
+    $result['lat']=$updated_profile->field_car_location['und'][0]['lat'];
+    $result['long']=$updated_profile->field_car_location['und'][0]['lon'];
+
+    echo json_encode($result);
+    die;
+ 
+      
+ }
+/**
+* @function nanme: save_deviceID
+  @return : JSON
+  @param: driver ID
+*/
+function save_deviceID(){
+  if(isset($_POST['user_id']) && isset($_POST['device_id']))
+  $uid=$_POST['user_id'];
+  $device_id=$_POST['device_id'];
+  $account = user_load($uid); // Loading account
+  $edit = array(
+    'field_device_id' => array(
+      'und' => array(
+        0 => array(
+          'value' => $device_id,
+        ),
+      ),
+    ),
+  );
+ /* $profile=profile2_load_by_user(user_load($driver_id),'driver');
+  // Add in the necessary custom fields and values.
+  $profile->field_device_id['und'][0]['value'] = trim($device_id);
+  // Save the profile2 to the user account.
+  profile2_save($profile);*/
+  $user=user_save($account,$edit);
+  $result['user']=$user;
+  $result['status']='1';
+  echo json_encode($result);
+  die;
+}
+function assign_driver(){
+  $nid=$_POST['entity_id'];
+  $did=$_POST['driver_id'];
+   $node = node_load($nid);
+  $user = user_load($did);
+   $profile=profile2_load_by_user(user_load($node->uid),'main');
+  $uid = $user->uid;
+  if(empty($node->field_car_driver)){
+  $node->field_car_driver['und'][0]['target_id'] = $uid;
+   //$node = node_submit($node);
+  node_save($node);
+  $result['status']=TRUE;
+  $result['phone']=$profile->field_phone_number['und'][0]['value'];
+  }else{
+  $result['status']=FALSE;
+  }
+ 
+  echo json_encode($result);
+  die;
+}
+/**
+ * @param $ride
+ */
+function unassign_driver() {
+  $nid=$_POST['entity_id'];
+  $node = node_load($nid);
+  if($_POST['uid']){
+  $denyID=$node->field_deny_by_driver['und'][0]['value'];
+   $denyID = $denyID.','.$_POST['uid'];
+  $denyID=ltrim($denyID,",");
+  trim($denyID);
+  $node->field_deny_by_driver['und'][0]['value']=$uniqueDep = implode(',', array_unique(explode(',', $denyID)));
+  }
+  
+  unset($node->field_car_driver);
+  //$node = node_submit($node);
+  node_save($node);
+   $nd = node_load($nid);
+  echo "<pre>";print_r($nd);die;
+  custom_pickup_driver_alert($nid, $_POST['uid'],array(8));
+   $result['status']=TRUE;
+  echo json_encode($result);
+  die;
+}
+function start_ride(){
+  $nid=$_POST['nid'];
+  $node=node_load($nid);
+  $nid = $node->uid;
+  
+  $query=db_query("SELECT * from commerce_cardonfile where uid=".$nid);
+  //echo $query;die;
+  $result=$query->fetchAll();
+
+ if(isset($node->field_order)){
+    add_product_cart($node);
+    // Add role:with customer
+    add_role('With customer',$node);
+    $result=array();
+    $result['status']=1;
+  }
+    echo json_encode($result);
+  
+    die;
+ 
+}
+function end_ride(){
+  // Add role: 
+  $nid=$_POST['nid'];
+  $price=$_POST['price'];
+  $node=node_load($nid);
+  $node->field_ride_price['und'][0]['value'] = $price;
+ // $node = node_submit($node);
+   node_save($node);
+   //echo "<pre>";print_r($node);die;
+  if(isset($node->field_order)){
+     add_role($role_name='Available',$node);
+     // Remove role: With customer
+     remove_role('With customer',$node);
+    // Remove,add,checkout product from line items
+    remove_add_checkout_product($node); 
+    $result=array();
+    $result['status']=1;
+    }
+    echo json_encode($result);
+    die;
+}
+function add_product_cart($node){
+   
+   $node->field_pickup_time['und'][0]['value']=strtotime("now");
+   
+   $product=commerce_product_load_by_sku('sf-towncar');
+   $line_item = commerce_product_line_item_new($product, 1, $node->field_order['und'][0]['target_id']);
+   commerce_cart_product_add($node->uid,$line_item);
+   //$order=commerce_order_load($node->field_order['und'][0]['target_id']);
+  
+   $node = node_submit($node);
+   node_save($node);
+}
+function add_role($role_name,$node){
+  $user=user_load($node->field_car_driver['und'][0]['target_id']);
+  $key = array_search($role_name, $user->roles);
+    if (!$key) {
+        $roles = user_roles(TRUE);
+        $rid = array_search($role_name, $roles);
+        if ($rid) {
+            $user_roles = $user->roles;
+            if (is_array($user_roles)) {
+                $user_roles [$rid] = $role_name;
+                user_save($user, array('roles' => $user_roles));
+            }
+        }
+    }
+}
+function remove_role($role_name,$node){
+   $user=user_load($node->field_car_driver['und'][0]['target_id']);
+   $key = array_search($role_name, $user->roles);
+  if ($key == TRUE) {
+    // Get the rid from the roles table.
+    $roles = user_roles(TRUE);
+    $rid = array_search($role_name, $roles);
+    if ($rid != FALSE) {
+      // Make a copy of the roles array, without the deleted one.
+      $new_roles = array();
+      foreach($user->roles as $id => $name) {
+        if ($id != $rid) {
+          $new_roles[$id] = $name;
+        }
+      }
+      user_save($user, array('roles' => $new_roles));
+    }
+  }
+}
+function userlogout(){
+   $uid=$_POST['uid'];
+   $user=user_load($uid);
+   $role_name='Available';
+   $key = array_search($role_name, $user->roles);
+  if ($key == TRUE) {
+    // Get the rid from the roles table.
+    $roles = user_roles(TRUE);
+    $rid = array_search($role_name, $roles);
+    if ($rid != FALSE) {
+      // Make a copy of the roles array, without the deleted one.
+      $new_roles = array();
+      foreach($user->roles as $id => $name) {
+        if ($id != $rid) {
+          $new_roles[$id] = $name;
+        }
+      }
+      user_save($user, array('roles' => $new_roles));
+    }
+  }
+  drupal_session_destroy_uid($uid);
+  $result['status']=1;
+  echo json_encode($result);
+  die;
+}
+function remove_add_checkout_product($node){
+  
+   $query=db_query("SELECT * from commerce_line_item where order_id=".$node->field_order['und'][0]['target_id']);
+   $result=$query->fetchAll();
+   $order=commerce_order_load($node->field_order['und'][0]['target_id']);
+   commerce_cart_order_product_line_item_delete($order, $result[0]->line_item_id);
+   $product=commerce_product_load_by_sku('sf-towncar-minimum');
+   $line_item = commerce_product_line_item_new($product, 1, $node->field_order['und'][0]['target_id']);
+   commerce_cart_product_add($node->uid,$line_item);
+   $order=commerce_order_load($node->field_order['und'][0]['target_id']);
+   // charge an order with card on file
+   $query=db_query("SELECT * from commerce_cardonfile where uid=".$node->uid);
+   $card_data=$query->fetchAll();
+   $charge = commerce_payment_order_balance($order);
+   commerce_cardonfile_order_charge_card($order,$charge=array(),$card_data);
+  commerce_checkout_complete($order);
+}
+function add_rating(){
+ $nid=$_POST['entity_id'];
+ $uid=$_POST['user_id'];
+ $value=$_POST['value'];
+ $node=node_load($nid);
+ $votes['entity_type']='user';
+ $votes['entity_id'] =$nid;
+ $votes['value_type']= 'percent';
+ $votes['value'] = $value;
+ $votes['uid'] = $uid;
+ $votes['timestamp']=REQUEST_TIME;
+ $criteria['entity_type']='user';
+ $criteria['entity_id']=$nid;
+ $criteria['value_type']='percent';
+ $criteria['uid']=$uid;
+ votingapi_set_votes($votes, $criteria);
+ $result['status']=1;
+ echo json_encode($result);
+ die;
+}
+function cancel_ride(){
+ $nid=$_POST['entity_id'];
+ $node=node_load($nid);
+ if($node->type=='ride_booker'){
+ $node->field_ride_event['und'][0]['tid']=4;
+ node_save($node);
+ }
+ $result['status']=1;
+ $result['message']='Ride'.$nid.'has been canceled';
+ echo json_encode($result);
+ die;
+}
+/**
+* Implements of hook_services_resources().
+*/
+function custom_driver_restapi_services_resources() {
+  $api = array(
+    'blog' => array(
+      'operations' => array(
+        'retrieve' => array(
+          'help' => 'Retrieves posted blogs',
+          'callback' => '_user_authenticate',
+          'access callback' => 'user_access',
+          'access arguments' => array('access content'),
+          'access arguments append' => FALSE,
+          'args' => array(
+            array(
+              'name' => 'fn',
+              'type' => 'string',
+              'description' => 'Function to perform',
+              'source' => array('path' => '0'),
+              'optional' => TRUE,
+              'default' => '0',
+            ),
+            array(
+              'name' => 'nitems',
+              'type' => 'string',
+              'description' => 'Number of latest items to get',
+              'source' => array('param' => 'nitems'),
+              'optional' => TRUE,
+              'default' => '0',
+            ),
+            array(
+              'name' => 'since',
+              'type' => 'string',
+              'description' => 'Posts from the last number of days',
+              'source' => array('param' => 'since'),
+              'optional' => TRUE,
+              'default' => '0',
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  return $api;
+}
+/**
+* Callback function for blog retrieve
+*/
+function _user_authenticate($fn,$nitems,$timestamp) {
+  echo $fn." ".$nitems;die;
+   return user_authenticate($nitems, $timestamp);
+}
+
+?>

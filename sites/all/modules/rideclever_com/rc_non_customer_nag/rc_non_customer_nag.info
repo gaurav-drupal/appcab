@@ -1,0 +1,11 @@
+name = RC Non-customer nag
+description = The modal that urges or nags the user to put a credit card on file
+core = 7.x
+package = Rideclever
+version = 7.x-1.0
+project = rc_non_customer_nag
+dependencies[] = entity
+dependencies[] = rules
+features[features_api][] = api:1
+features[rules_config][] = rules_non_customer_nag
+project path = sites/all/modules/rideclever_com

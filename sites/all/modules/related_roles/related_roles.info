@@ -1,0 +1,4 @@
+name = Related roles
+description = Relates taxonomy term to role
+core = 7.x
+dependencies[] = taxonomy

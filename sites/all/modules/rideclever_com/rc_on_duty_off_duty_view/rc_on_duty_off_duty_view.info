@@ -1,0 +1,12 @@
+name = RC On-duty-off-duty View
+description = The view that builds the block for on and off duty
+core = 7.x
+package = Rideclever
+version = 7.x-1.0
+project = rc_on_duty_off_duty_view
+dependencies[] = views
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:1
+features[views_view][] = ondutyoffduty
+features_exclude[dependencies][ctools] = ctools
+project path = sites/all/modules/rideclever_com

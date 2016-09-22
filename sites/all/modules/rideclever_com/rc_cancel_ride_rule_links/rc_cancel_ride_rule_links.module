@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RC Cancel ride rule links feature.
+ */
+
+include_once 'rc_cancel_ride_rule_links.features.inc';

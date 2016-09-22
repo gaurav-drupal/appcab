@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * @file
+ * Adds missing Card on File Support for the Commerce_authnet module.
+ * This module should ultimately become obsolete once Commerce Authnet adds the support.
+ */
+
+
+/**
+ * Implementation of hook_commerce_payment_method_info_alter
+ *
+ * Add card on file process callback if not already defined
+ */
+function commerce_authnet_cof_commerce_payment_method_info_alter(&$payment_methods) {
+  if(!isset($payment_methods['authnet_aim']['cardonfile']['process callback'])){
+    $payment_methods['authnet_aim']['cardonfile']['process callback'] = 'commerce_authnet_cof_cim_cardonfile_process';
+  }
+}
+
+
+/**
+ * Card on file callback: processes a customer payment profile.
+ *
+ * @param $payment_method
+ *  The payment method instance definition array.
+ * @param $card_data
+ *   The stored credit card data array to be processed
+ * @param $order
+ *   The order object that is being processed
+ * @param $charge
+ *   The price array for the charge amount with keys of 'amount' and 'currency'
+ *
+ * @return
+ *   TRUE if the transaction was successful
+ */
+function commerce_authnet_cof_cim_cardonfile_process($payment_method, $card_data, $order, $charge) {
+  $wrapper = entity_metadata_wrapper('commerce_order', $order);
+  $settings = $payment_method['settings'];
+
+  // Shoehorn these value into a form submit function which should be an API call.
+  $pane_form      = NULL;
+  $pane_values    = array("cardonfile" => $card_data['card_id']);
+
+  // This form submit should only return FALSE if the transaction fails
+  if (commerce_authnet_aim_submit_form_submit($payment_method, $pane_form, $pane_values, $order, $charge) !== FALSE) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}

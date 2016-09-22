@@ -1,0 +1,13 @@
+name = RC Accept taxi ride rule
+description = The rule that allows drivers to accept a taxi ride
+core = 7.x
+package = Rideclever
+php = 5.2.4
+version = 7.x-1.0
+project = rc_accept_taxi_ride_rule
+dependencies[] = custom_order_ride
+dependencies[] = entity
+dependencies[] = rules
+features[features_api][] = api:1
+features[rules_config][] = rules_accept_taxi_ride
+project path = sites/all/modules/rideclever_com
